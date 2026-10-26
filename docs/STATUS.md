@@ -16,6 +16,7 @@
 - `.app` Bundle ID 元数据、跨 Mac 自动重定位与路径修复；旧版配置无需迁移即可继续读取。
 - 入口健康检查、最近 50 条运行事件和可导出的本机诊断报告。
 - VacuumTube 安装检测与一键接入目录；BiliTV 明确标记为待 Mac 适配。
+- BiliTV v2.5.1 官方发布包的固定版本下载、SHA-256 校验、解包脚本和 Mac 适配边界清单；上游二进制保持在忽略目录，不混入仓库。
 - 全局 Control + Option + H 注册；手柄只在应用前台路由；外部游戏退出时恢复主页的状态管理。
 
 自动化验证命令：`./Scripts/test.sh`。14 项通过，包含焦点边界、配置往返与备份、旧配置兼容、拒绝未来配置、入口健康分级、参数校验、重复启动去重、连续确认防重入、禁用模块、失败恢复、当前应用退出恢复、真实子进程与参数不被 shell 展开、缺失资源拒绝、重复 ID 不覆盖已有配置。
@@ -32,7 +33,7 @@ Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --ver
 | 小米遥控器、语音、HDMI | 当前为 MacBook 开发环境，目标设备验收待进行 |
 | 塞尔达 | 未访问 Mac mini 的游戏路径和启动器，待在目标机器配置 |
 | YouTube | VacuumTube 官方 macOS 包已核实，未安装和完成播放验收 |
-| Bilibili | BiliTV webOS 路线已核实；源码下载未取得可用 checkout，尚未移植与打包 |
+| Bilibili | BiliTV v2.5.1 `.ipk` 已可复现获取并完成平台依赖审计；PalmServiceBridge、sidecar 和媒体代理尚未完成 Mac 实现 |
 | Apple Music | 预览包尚未配置 MusicKit 开发者签名，账户连接默认禁用；真实授权和播放未验收 |
 | 系统照片图库 | 手动权限接口已编译；未擅自请求权限或读取用户图库 |
 | HA / Hermes / Remote | 模块与说明入口已建立；服务连接与网络监听尚未实现 |

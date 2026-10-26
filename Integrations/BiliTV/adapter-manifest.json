@@ -1,0 +1,19 @@
+{
+  "upstream": "https://github.com/asdf17128/bili-webos",
+  "version": "2.5.1",
+  "archive": "com.biliwebos.app_2.5.1_all.ipk",
+  "archiveSha256": "d41f4da03eecd40e1b06425d3037dd8f1fb5c4ae4cfe79953ee8a4d96862d2aa",
+  "applicationPath": "usr/palm/applications/com.biliwebos.app",
+  "servicePath": "usr/palm/services/com.biliwebos.app.service",
+  "upstreamApplicationID": "com.biliwebos.app",
+  "upstreamServiceID": "com.biliwebos.app.service",
+  "macBundleID": "com.mmtv.bilitv",
+  "requiredAdapters": [
+    "PalmServiceBridge to native IPC",
+    "webos-service to a local sidecar transport",
+    "/media/internal state to Application Support",
+    "127.0.0.1:7654 media proxy lifecycle",
+    "webOS device and network API compatibility"
+  ]
+}
+

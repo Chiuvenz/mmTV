@@ -18,7 +18,9 @@
 
 本次核实其应用目录与构建定义。2026-10-26 的上游最新发布为 v2.5.1，产物是 `com.biliwebos.app_2.5.1_all.ipk`，依赖 webOS 的 Luna service 与本机媒体代理，不能直接当作 macOS `.app` 安装。源码下载尝试未取得可用 checkout，未进入移植构建和真实播放验证。
 
-下一步：取得固定版本源码，确认服务代理和浏览器开发模式的依赖，构建隔离的本机运行时，验证匿名列表、二维码登录、媒体请求与实际解码，再打包独立 App 接入。TV Web Runtime 先服务这一款应用，确认复用需求后才公共化。
+已新增可复现的 `Scripts/fetch-bilitv.sh`：固定下载官方 v2.5.1 `.ipk`，校验 GitHub 发布的 SHA-256 后解包到不入库的 `External/BiliTV/`。发布包审计确认前端依赖 `PalmServiceBridge`，Node 服务依赖 `webos-service`、`/media/internal` 状态目录和 `127.0.0.1:7654` 媒体代理。适配边界记录在 `Integrations/BiliTV/adapter-manifest.json`。
+
+下一步：实现 PalmServiceBridge 到本地 IPC 的 shim、macOS 状态目录和 sidecar 生命周期，再验证匿名列表、二维码登录、媒体请求与实际解码，最后打包独立 `BiliTVMac.app` 接入。TV Web Runtime 先服务这一款应用，确认复用需求后才公共化。
 
 当前 UI 清楚标注“需要移植打包”，不会自动打开普通 B 站桌面网页来声称完成电视版集成。
 

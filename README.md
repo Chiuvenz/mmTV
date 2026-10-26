@@ -35,5 +35,6 @@ build.sh 使用已安装的 XcodeGen 生成工程；所有 Swift 模块均为本
 - [开发与运行](docs/DEVELOPMENT.md)
 - [当前实现与验收记录](docs/STATUS.md)
 - [视频客户端接入记录](docs/VIDEO-INTEGRATIONS.md)
+- [BiliTV Mac 适配边界](Integrations/BiliTV/README.md)
 
 开发在 MacBook 进行；首个可运行包即可部署到 Mac mini 验证真实电视链路。Google Drive 照片同步、完整 MusicKit 播放器、影像馆、HA/Hermes 连接、网络控制与 TVCompat 仍按后续阶段推进。
