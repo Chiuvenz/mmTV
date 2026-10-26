@@ -1,0 +1,39 @@
+name: mmTV
+options:
+  bundleIdPrefix: com.mmtv
+  deploymentTarget:
+    macOS: '15.0'
+packages:
+  mmTV:
+    path: Packages/mmTV
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    ARCHS: arm64
+    MACOSX_DEPLOYMENT_TARGET: '15.0'
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  mmTV:
+    type: application
+    platform: macOS
+    sources: [Apps/mmTVMac]
+    dependencies:
+      - package: mmTV
+        products: [Contracts, Core, MacHost, Input, DesignSystem, Games, TVApps, Music, PhotoGallery, Home, Assistant, Remote]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mmtv.mac
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: mmTV
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.entertainment
+        INFOPLIST_KEY_NSMusicUsageDescription: 在电视界面中浏览和播放你授权的 Apple Music 内容。
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 在私人影像馆中展示你授权的照片与视频。
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: 使用麦克风接收你的语音指令。
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        ENABLE_APP_SANDBOX: NO
+        SWIFT_STRICT_CONCURRENCY: complete
+    scheme:
+      gatherCoverageData: false

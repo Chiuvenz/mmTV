@@ -1,0 +1,446 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F72C3D4C8D33D62FFD84444 /* Contracts in Frameworks */ = {isa = PBXBuildFile; productRef = 2F64E077DCEC1DFBA379F5FB /* Contracts */; };
+		17161347C3665C568C65BAD4 /* PhotoGallery in Frameworks */ = {isa = PBXBuildFile; productRef = 18310453223A5F68C6D1B4CC /* PhotoGallery */; };
+		1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */; };
+		271A68FB41212D9A3023DC4C /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = DB0F1A2943F2697ED7AE2F70 /* DesignSystem */; };
+		575AC3DF418735F89047BFE8 /* TVApps in Frameworks */ = {isa = PBXBuildFile; productRef = 089211EBB28359DAFCCC65CE /* TVApps */; };
+		62EA25E57E5559CE60E523AE /* MacHost in Frameworks */ = {isa = PBXBuildFile; productRef = 99B5E419FA6A8D427D063DF5 /* MacHost */; };
+		80D92E48A6E3BC28305C8C5E /* Assistant in Frameworks */ = {isa = PBXBuildFile; productRef = 7E7F63350F8CC2B6D6A9579C /* Assistant */; };
+		83E4545AC23B203D293079DD /* Music in Frameworks */ = {isa = PBXBuildFile; productRef = 62F184A10247D2C36A970B5E /* Music */; };
+		84265BF0E90F5494D67957EF /* EntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7249AD04AA9359CBE7307C76 /* EntryEditor.swift */; };
+		84E3DADCE82FB2C30592DFB2 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB19130A18E538B1B692795 /* AppModel.swift */; };
+		87ED5F9AE38769BEBC8F3CF5 /* mmTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C877569049113226D1C515C2 /* mmTVApp.swift */; };
+		98141564569B51D151A5F237 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = E5D3F376CC9E50FD1DEC1937 /* Core */; };
+		9DB316F244CC8D00382A7A7B /* Home in Frameworks */ = {isa = PBXBuildFile; productRef = 5C6D49E266DAEA8A82B9D0BA /* Home */; };
+		AC4D7125D3348144C1663FDB /* Remote in Frameworks */ = {isa = PBXBuildFile; productRef = 1435C87C05C161C5FBADB1D2 /* Remote */; };
+		D60A95029F44581DDDD3B24F /* Games in Frameworks */ = {isa = PBXBuildFile; productRef = 342AA829C637085C0E3DFCC9 /* Games */; };
+		DB43CD544FA8D1A70BAD589D /* Input in Frameworks */ = {isa = PBXBuildFile; productRef = FE77612A1E9A81EE425E1603 /* Input */; };
+		E0B8D0568FF183A0CD908A38 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA410CF762649D0E6D007B4 /* RootView.swift */; };
+		F77798A99B772FA1A82096C2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E98F850FF4969BDCD7AC54 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0A2B6E6E8F46D56EEC81BBCE /* mmTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mmTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CB19130A18E538B1B692795 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewRenderer.swift; sourceTree = "<group>"; };
+		566F927B11997688EA19A5CF /* mmTV */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mmTV; path = Packages/mmTV; sourceTree = SOURCE_ROOT; };
+		7249AD04AA9359CBE7307C76 /* EntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryEditor.swift; sourceTree = "<group>"; };
+		BBA410CF762649D0E6D007B4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C5E98F850FF4969BDCD7AC54 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C877569049113226D1C515C2 /* mmTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mmTVApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		92C357435A290B2448FEFDB6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F72C3D4C8D33D62FFD84444 /* Contracts in Frameworks */,
+				98141564569B51D151A5F237 /* Core in Frameworks */,
+				62EA25E57E5559CE60E523AE /* MacHost in Frameworks */,
+				DB43CD544FA8D1A70BAD589D /* Input in Frameworks */,
+				271A68FB41212D9A3023DC4C /* DesignSystem in Frameworks */,
+				D60A95029F44581DDDD3B24F /* Games in Frameworks */,
+				575AC3DF418735F89047BFE8 /* TVApps in Frameworks */,
+				83E4545AC23B203D293079DD /* Music in Frameworks */,
+				17161347C3665C568C65BAD4 /* PhotoGallery in Frameworks */,
+				9DB316F244CC8D00382A7A7B /* Home in Frameworks */,
+				80D92E48A6E3BC28305C8C5E /* Assistant in Frameworks */,
+				AC4D7125D3348144C1663FDB /* Remote in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		179A51641B9DCD2A1C829AC0 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				566F927B11997688EA19A5CF /* mmTV */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		22DD3AD297541770FF06981C /* mmTVMac */ = {
+			isa = PBXGroup;
+			children = (
+				4CB19130A18E538B1B692795 /* AppModel.swift */,
+				7249AD04AA9359CBE7307C76 /* EntryEditor.swift */,
+				C877569049113226D1C515C2 /* mmTVApp.swift */,
+				52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */,
+				BBA410CF762649D0E6D007B4 /* RootView.swift */,
+				C5E98F850FF4969BDCD7AC54 /* SettingsView.swift */,
+			);
+			name = mmTVMac;
+			path = Apps/mmTVMac;
+			sourceTree = "<group>";
+		};
+		3A1E055BBFE405D97FB04264 = {
+			isa = PBXGroup;
+			children = (
+				22DD3AD297541770FF06981C /* mmTVMac */,
+				179A51641B9DCD2A1C829AC0 /* Packages */,
+				C6CD7986CEF31D889A27CA50 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C6CD7986CEF31D889A27CA50 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0A2B6E6E8F46D56EEC81BBCE /* mmTV.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		095990D8261EB0E4C1AB78D0 /* mmTV */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A2B9B84F3CB9ADB8A3A7ADEA /* Build configuration list for PBXNativeTarget "mmTV" */;
+			buildPhases = (
+				4B52E6DF0418A34D94BB7F03 /* Sources */,
+				92C357435A290B2448FEFDB6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = mmTV;
+			packageProductDependencies = (
+				2F64E077DCEC1DFBA379F5FB /* Contracts */,
+				E5D3F376CC9E50FD1DEC1937 /* Core */,
+				99B5E419FA6A8D427D063DF5 /* MacHost */,
+				FE77612A1E9A81EE425E1603 /* Input */,
+				DB0F1A2943F2697ED7AE2F70 /* DesignSystem */,
+				342AA829C637085C0E3DFCC9 /* Games */,
+				089211EBB28359DAFCCC65CE /* TVApps */,
+				62F184A10247D2C36A970B5E /* Music */,
+				18310453223A5F68C6D1B4CC /* PhotoGallery */,
+				5C6D49E266DAEA8A82B9D0BA /* Home */,
+				7E7F63350F8CC2B6D6A9579C /* Assistant */,
+				1435C87C05C161C5FBADB1D2 /* Remote */,
+			);
+			productName = mmTV;
+			productReference = 0A2B6E6E8F46D56EEC81BBCE /* mmTV.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		03B34DC03D8B7DA2C114FB14 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					095990D8261EB0E4C1AB78D0 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 81771069C29FD47C62ECD3E0 /* Build configuration list for PBXProject "mmTV" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3A1E055BBFE405D97FB04264;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E2FEFB1033BFA3A352262B51 /* XCLocalSwiftPackageReference "Packages/mmTV" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C6CD7986CEF31D889A27CA50 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				095990D8261EB0E4C1AB78D0 /* mmTV */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4B52E6DF0418A34D94BB7F03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84E3DADCE82FB2C30592DFB2 /* AppModel.swift in Sources */,
+				84265BF0E90F5494D67957EF /* EntryEditor.swift in Sources */,
+				1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */,
+				E0B8D0568FF183A0CD908A38 /* RootView.swift in Sources */,
+				F77798A99B772FA1A82096C2 /* SettingsView.swift in Sources */,
+				87ED5F9AE38769BEBC8F3CF5 /* mmTVApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		270B9762E9DC7C7DE864BEE3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = mmTV;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "使用麦克风接收你的语音指令。";
+				INFOPLIST_KEY_NSMusicUsageDescription = "在电视界面中浏览和播放你授权的 Apple Music 内容。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "在私人影像馆中展示你授权的照片与视频。";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mmtv.mac;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Release;
+		};
+		3AD2CE2CDDB247BE63FEEEB4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A433D43D38DCFE06834669D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = mmTV;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "使用麦克风接收你的语音指令。";
+				INFOPLIST_KEY_NSMusicUsageDescription = "在电视界面中浏览和播放你授权的 Apple Music 内容。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "在私人影像馆中展示你授权的照片与视频。";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mmtv.mac;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Debug;
+		};
+		CAB3B418FE12C92D088D0FDE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		81771069C29FD47C62ECD3E0 /* Build configuration list for PBXProject "mmTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3AD2CE2CDDB247BE63FEEEB4 /* Debug */,
+				CAB3B418FE12C92D088D0FDE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A2B9B84F3CB9ADB8A3A7ADEA /* Build configuration list for PBXNativeTarget "mmTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A433D43D38DCFE06834669D2 /* Debug */,
+				270B9762E9DC7C7DE864BEE3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		E2FEFB1033BFA3A352262B51 /* XCLocalSwiftPackageReference "Packages/mmTV" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/mmTV;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		089211EBB28359DAFCCC65CE /* TVApps */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TVApps;
+		};
+		1435C87C05C161C5FBADB1D2 /* Remote */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Remote;
+		};
+		18310453223A5F68C6D1B4CC /* PhotoGallery */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PhotoGallery;
+		};
+		2F64E077DCEC1DFBA379F5FB /* Contracts */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Contracts;
+		};
+		342AA829C637085C0E3DFCC9 /* Games */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Games;
+		};
+		5C6D49E266DAEA8A82B9D0BA /* Home */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Home;
+		};
+		62F184A10247D2C36A970B5E /* Music */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Music;
+		};
+		7E7F63350F8CC2B6D6A9579C /* Assistant */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Assistant;
+		};
+		99B5E419FA6A8D427D063DF5 /* MacHost */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MacHost;
+		};
+		DB0F1A2943F2697ED7AE2F70 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		E5D3F376CC9E50FD1DEC1937 /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Core;
+		};
+		FE77612A1E9A81EE425E1603 /* Input */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Input;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 03B34DC03D8B7DA2C114FB14 /* Project object */;
+}

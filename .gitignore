@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+.build/
+DerivedData/
+build/
+dist/
+External/
+*.xcuserstate
+xcuserdata/
+.env
+Config/local.json
+
+*.log

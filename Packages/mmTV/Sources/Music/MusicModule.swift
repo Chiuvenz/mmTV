@@ -1,0 +1,25 @@
+import Foundation
+import MusicKit
+import Contracts
+
+public enum MusicModule {
+    public static var accountConnectionEnabled: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "mmTVMusicKitEnabled") as? Bool ?? false
+    }
+    public static var descriptor: ModuleDescriptor {
+        .init(.music, title: "听点什么", subtitle: "Apple Music · 你的音乐时光", symbol: "music.note", status: .needsSetup)
+    }
+    public static var authorizationDescription: String {
+        switch MusicAuthorization.currentStatus {
+        case .authorized: "已授权 Apple Music；完整播放器将在音乐版本接入。"
+        case .denied: "Apple Music 权限已拒绝，可在系统设置中修改。"
+        case .restricted: "当前账户限制了 Apple Music 访问。"
+        default: "尚未请求 Apple Music 授权。"
+        }
+    }
+    public static func requestAuthorization() async -> String {
+        guard accountConnectionEnabled else { return "此预览构建尚未启用 Apple Music 账户连接；需完成开发者签名配置后验证。" }
+        _ = await MusicAuthorization.request()
+        return authorizationDescription
+    }
+}
