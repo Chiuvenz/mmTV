@@ -8,10 +8,13 @@ public struct TVAppCandidate: Identifiable, Sendable {
     public let source: URL
     public let macBundleID: String?
     public let download: URL
+    public let launchArguments: [String]
     public init(id: String, title: String, detail: String, source: URL,
-                macBundleID: String? = nil, download: URL? = nil) {
+                macBundleID: String? = nil, download: URL? = nil,
+                launchArguments: [String] = []) {
         self.id = id; self.title = title; self.detail = detail; self.source = source
         self.macBundleID = macBundleID; self.download = download ?? source
+        self.launchArguments = launchArguments
     }
 }
 public enum TVAppsModule {
@@ -23,9 +26,11 @@ public enum TVAppsModule {
               source: URL(string: "https://github.com/shy1132/VacuumTube")!,
               macBundleID: "rocks.shy.VacuumTube",
               download: URL(string: "https://github.com/shy1132/VacuumTube/releases/latest")!),
-        .init(id: "bilibili", title: "Bilibili / BiliTV", detail: "LG webOS 客户端；Mac 适配尚在开发，不提供虚假的一键接入。",
+        .init(id: "bilibili", title: "Bilibili / BiliTVMac", detail: "mmTV 独立 Mac 适配器；安装后可自动检测并以电视全屏模式启动。",
               source: URL(string: "https://github.com/asdf17128/bili-webos")!,
-              download: URL(string: "https://github.com/asdf17128/bili-webos/releases/latest")!)
+              macBundleID: "com.mmtv.bilitv",
+              download: URL(string: "https://github.com/Chiuvenz/mmTV/tree/main/Integrations/BiliTVMac")!,
+              launchArguments: ["--tv-fullscreen"])
     ]
     public static func entries(in configuration: AppConfiguration) -> [AppEntry] {
         configuration.entries.filter { $0.module == .video }

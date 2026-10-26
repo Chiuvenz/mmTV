@@ -20,6 +20,16 @@ open dist/mmTV.app
 
 build.sh 生成 Release 应用与 ZIP，当前使用本机 ad-hoc 签名，供本地开发验收。该签名不等同于 Developer ID 公证，不承诺复制到另一台 Mac 后直接通过 Gatekeeper。正式分发需在 Xcode 中配置开发团队、Developer ID 与公证，或在目标 Mac 本机构建。无需关闭 Gatekeeper。
 
+构建包括 BiliTVMac 在内的完整 V0.2 候选包：
+
+```sh
+./Scripts/build-all.sh
+```
+
+该命令会固定获取并校验 BiliTV v2.5.1、执行 Node 测试与依赖审计，随后在 `dist/` 生成 mmTV 与 BiliTVMac 两个 arm64 ZIP。首次构建需要下载 Electron。BiliTVMac 使用独立进程、Bundle ID `com.mmtv.bilitv` 和独立 Application Support 状态；将它安装到 Applications 后，mmTV 视频模块可自动检测并以电视全屏参数接入。
+
+`build-bilitv.sh` 默认对完成签名的 `.app` 做真实匿名烟测（在线接口、内容卡、焦点、静音起播和返回）。仅在明确知道当前环境没有 WindowServer 或网络时，可用 `MMTV_SKIP_BILITV_SMOKE=1` 跳过；跳过后的包不能视为本机验收完成。
+
 ## 单模块和隔离配置
 
 ```sh

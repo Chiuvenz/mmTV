@@ -1,0 +1,46 @@
+{
+  "name": "mmtv-bilitv-mac",
+  "version": "0.1.0",
+  "private": true,
+  "author": "mmTV contributors",
+  "description": "Isolated macOS runtime adapter for BiliTV",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "build:mac": "electron-builder --mac zip --arm64"
+  },
+  "devDependencies": {
+    "electron": "42.11.18",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.mmtv.bilitv",
+    "productName": "BiliTVMac",
+    "artifactName": "BiliTVMac-${version}-${arch}.${ext}",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "service-host.js",
+      "entitlements.mac.plist",
+      "THIRD-PARTY-NOTICES.md",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor",
+        "to": "bilitv"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "target": ["zip"],
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "identity": null
+    }
+  }
+}

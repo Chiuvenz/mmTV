@@ -189,6 +189,7 @@ import Remote
         do {
             try upsert(.init(title: candidate.title.components(separatedBy: " / ").last ?? candidate.title,
                              module: .video, location: location,
+                             arguments: candidate.launchArguments,
                              applicationBundleID: bundleID,
                              notes: "由 mmTV 应用目录自动接入。"))
             message = "已接入 \(candidate.title)。"

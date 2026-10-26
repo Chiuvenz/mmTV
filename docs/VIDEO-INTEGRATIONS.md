@@ -1,6 +1,6 @@
 # 视频应用接入记录
 
-状态：候选路线已核实，通用本机应用/启动器适配已实现，以下两个客户端的完整播放链路尚未验收。
+状态：通用本机应用/启动器适配已实现；BiliTVMac 达到 MacBook 开发候选，VacuumTube 与两者的账号/目标设备链路仍待验收。
 
 ## YouTube
 
@@ -16,16 +16,16 @@
 
 候选：[BiliTV for webOS](https://github.com/asdf17128/bili-webos)，React/Vite 电视客户端，具有独立 webOS 服务端能力。
 
-本次核实其应用目录与构建定义。2026-10-26 的上游最新发布为 v2.5.1，产物是 `com.biliwebos.app_2.5.1_all.ipk`，依赖 webOS 的 Luna service 与本机媒体代理，不能直接当作 macOS `.app` 安装。源码下载尝试未取得可用 checkout，未进入移植构建和真实播放验证。
+本次核实其应用目录与构建定义。2026-10-26 的上游最新发布为 v2.5.1，产物是 `com.biliwebos.app_2.5.1_all.ipk`，依赖 webOS 的 Luna service 与本机媒体代理，不能直接当作 macOS `.app` 安装，因此由 mmTV 提供独立适配器。
 
-已新增可复现的 `Scripts/fetch-bilitv.sh`：固定下载官方 v2.5.1 `.ipk`，校验 GitHub 发布的 SHA-256 后解包到不入库的 `External/BiliTV/`。发布包审计确认前端依赖 `PalmServiceBridge`，Node 服务依赖 `webos-service`、`/media/internal` 状态目录和 `127.0.0.1:7654` 媒体代理。适配边界记录在 `Integrations/BiliTV/adapter-manifest.json`。
+`Scripts/fetch-bilitv.sh` 固定下载官方 v2.5.1 `.ipk`，校验 GitHub 发布的 SHA-256 后解包到不入库的 `External/BiliTV/`。发布包审计确认前端依赖 `PalmServiceBridge`，Node 服务依赖 `webos-service`、`/media/internal` 状态目录和 `127.0.0.1:7654` 媒体代理。适配边界记录在 `Integrations/BiliTV/adapter-manifest.json`。
 
-下一步：实现 PalmServiceBridge 到本地 IPC 的 shim、macOS 状态目录和 sidecar 生命周期，再验证匿名列表、二维码登录、媒体请求与实际解码，最后打包独立 `BiliTVMac.app` 接入。TV Web Runtime 先服务这一款应用，确认复用需求后才公共化。
+`Integrations/BiliTVMac/` 已实现独立 Electron 运行时、PalmServiceBridge 到本地 IPC 的 shim、macOS 状态目录和服务生命周期，并打包为 Bundle ID `com.mmtv.bilitv`。MacBook 自动烟测已验证匿名列表、方向焦点、真实媒体解码起播和返回；二维码登录、账号状态、可听音频与目标电视链路留到实机验收。运行时保持本应用私有，确认第二个复用需求后才公共化。
 
-当前 UI 清楚标注“需要移植打包”，不会自动打开普通 B 站桌面网页来声称完成电视版集成。
+当前 UI 会检测 `com.mmtv.bilitv` 并提供接入；未安装时链接到适配器构建说明，不会退回普通 B 站桌面网页来声称完成电视版集成。
 
 ## 所有第三方应用共用的能力边界
 
 当前实现：添加/编辑入口、路径与资源检查、跨 Mac 应用重定位、参数数组启动、已有进程激活、可观测的退出恢复、运行诊断、全局 Home、人工记录 TV 交互已验证状态。
 
-当前未实现：第三方应用内部按键注入、强制全屏、登录代理、媒体进度读取和统一播放控制。因此不展示第三方播放进度或续播能力。遥控器按键映射由实际客户端支持和外围遥控组件配置决定。
+当前未实现：通用第三方应用内部按键注入、登录代理、媒体进度读取和统一播放控制。因此不展示第三方播放进度或续播能力。BiliTVMac 自身支持方向键并由 mmTV 传入全屏启动参数；其他客户端的按键与全屏仍由客户端自身和外围遥控组件决定。
