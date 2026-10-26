@@ -22,7 +22,7 @@ public enum TVAppsModule {
         .init(.video, title: "看点什么", subtitle: "电视应用 · 电影 · 视频", symbol: "play.rectangle", status: count > 0 ? .ready : .needsSetup)
     }
     public static let candidates: [TVAppCandidate] = [
-        .init(id: "youtube", title: "YouTube / VacuumTube", detail: "原生 macOS 包；安装后 mmTV 可自动检测并接入。",
+        .init(id: "youtube", title: "YouTube / VacuumTube", detail: "可自动检测；上游 v2.0.1 未通过 macOS 严格签名校验，暂不自动安装。",
               source: URL(string: "https://github.com/shy1132/VacuumTube")!,
               macBundleID: "rocks.shy.VacuumTube",
               download: URL(string: "https://github.com/shy1132/VacuumTube/releases/latest")!),

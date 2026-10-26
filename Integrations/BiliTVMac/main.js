@@ -29,6 +29,12 @@ async function runSmokeTest(outputPath) {
       result.api.code = parsed.code;
       result.api.items = parsed.data?.list?.length || 0;
     }
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await mainWindow.webContents.executeJavaScript(`(() => {
+      const item = Array.from(document.querySelectorAll('.sidebar-item'))
+        .find(element => (element.innerText || '').trim() === '推荐');
+      item?.click();
+    })()`);
     for (let attempt = 0; attempt < 40; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const page = await mainWindow.webContents.executeJavaScript(`({
@@ -38,15 +44,28 @@ async function runSmokeTest(outputPath) {
         videoCards: document.querySelectorAll('.video-card').length
       })`);
       result.page = page;
-      if (page.videoCards > 0 || (page.rootChildren > 0 && !page.text.includes('正在连接服务'))) break;
+      if (page.videoCards > 0) break;
+      if (attempt > 0 && attempt % 4 === 0 && page.text.includes('内容加载失败')) {
+        await mainWindow.webContents.executeJavaScript(`(() => {
+          const retry = Array.from(document.querySelectorAll('button'))
+            .find(element => (element.innerText || '').includes('重试'));
+          retry?.click();
+        })()`);
+      }
     }
     result.input = {
       before: await mainWindow.webContents.executeJavaScript("document.querySelector('.focused')?.dataset.focusId || null"),
     };
-    mainWindow.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
-    mainWindow.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
-    await new Promise(resolve => setTimeout(resolve, 250));
-    result.input.after = await mainWindow.webContents.executeJavaScript("document.querySelector('.focused')?.dataset.focusId || null");
+    for (const direction of ['Right', 'Left', 'Down', 'Up']) {
+      mainWindow.webContents.sendInputEvent({ type: 'keyDown', keyCode: direction });
+      mainWindow.webContents.sendInputEvent({ type: 'keyUp', keyCode: direction });
+      await new Promise(resolve => setTimeout(resolve, 200));
+      result.input.after = await mainWindow.webContents.executeJavaScript("document.querySelector('.focused')?.dataset.focusId || null");
+      if (result.input.before && result.input.after && result.input.before !== result.input.after) {
+        result.input.direction = direction;
+        break;
+      }
+    }
     result.input.moved = Boolean(result.input.before && result.input.after && result.input.before !== result.input.after);
     const focusedContent = result.input.after?.startsWith('content-');
     if (focusedContent) {
@@ -86,7 +105,7 @@ async function runSmokeTest(outputPath) {
     fs.writeFileSync(screenshotPath, image.toPNG());
     result.screenshotPath = screenshotPath;
     result.ok = result.service.returnValue === true && result.api.returnValue === true &&
-      result.api.status === 200 && result.api.code === 0 && result.page.rootChildren > 0 && result.input.moved &&
+      result.api.status === 200 && result.api.code === 0 && result.page.videoCards > 0 && result.input.moved &&
       result.playback.started && result.playback.returned;
   } catch (error) {
     result.ok = false;

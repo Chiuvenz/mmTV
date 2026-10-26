@@ -6,9 +6,9 @@
 
 候选：[VacuumTube](https://github.com/shy1132/VacuumTube)，开源 YouTube Leanback 桌面客户端。
 
-本次通过仓库发布 API 核实 v2.0.1 包含 VacuumTube-arm64.dmg / VacuumTube-arm64.zip 等 macOS 构建，应用 Bundle ID 为 `rocks.shy.VacuumTube`。该版本号为 2026-10-26 的查询记录，后续安装以官方发布页为准。
+本次通过仓库发布 API 核实 v2.0.1 包含 VacuumTube-arm64.dmg / VacuumTube-arm64.zip 等 macOS 构建，应用 Bundle ID 为 `rocks.shy.VacuumTube`。在 M4 Mac mini 上分别检查官方 ZIP 与 DMG，两者内部 App 都没有 `_CodeSignature` 资源封印，`codesign --verify --deep --strict` 与 Gatekeeper 均失败。因此当前不自动安装、不重签，也不建议绕过系统安全运行；等待上游提供有效 Developer ID 签名，或另行审计源码后自行构建。
 
-接入：用户安装官方 macOS 版本后，mmTV 会自动检测并显示“接入”；也可以在“看点什么 → 添加视频应用”手动选择实际 `.app`。首次安装、启动与系统信任提示按正常 macOS 流程处理；本项目未自动下载安装或修改系统信任设置。
+接入：用户安装可信的 macOS 构建后，mmTV 会自动检测并显示“接入”；也可以在“看点什么 → 添加视频应用”手动选择实际 `.app`。本项目不会自动下载安装、重签第三方 App 或修改系统信任设置。
 
 待验收：匿名浏览、账号登录、视频播放、声音、方向键、全屏、Home 返回、退出恢复。不能将入口可启动视为这些项目全部通过。
 
