@@ -8,19 +8,21 @@ import OSLog
     private var processes: [Int32: Process] = [:]
     public func launch(_ entry: AppEntry) async throws -> ApplicationHandle {
         try EntryValidation.validate(entry)
-        guard FileManager.default.fileExists(atPath: entry.location) else { throw LaunchError.missing(entry.location) }
+        guard let resolvedLocation = ApplicationLocationResolver.resolvedLocation(for: entry) else {
+            throw LaunchError.missing(entry.location)
+        }
         if let resources = entry.resourceDirectory, !resources.isEmpty,
            !FileManager.default.fileExists(atPath: resources) { throw LaunchError.missing(resources) }
         if entry.kind == .application {
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true
             configuration.arguments = entry.arguments
-            let app = try await NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: entry.location), configuration: configuration)
+            let app = try await NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: resolvedLocation), configuration: configuration)
             return ApplicationHandle(pid: app.processIdentifier, bundleID: app.bundleIdentifier)
         }
-        guard FileManager.default.isExecutableFile(atPath: entry.location) else { throw LaunchError.invalid("该文件不可执行，请选择应用或可执行文件。") }
+        guard FileManager.default.isExecutableFile(atPath: resolvedLocation) else { throw LaunchError.invalid("该文件不可执行，请选择应用或可执行文件。") }
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: entry.location)
+        process.executableURL = URL(fileURLWithPath: resolvedLocation)
         process.arguments = entry.arguments
         if let folder = entry.resourceDirectory, !folder.isEmpty { process.currentDirectoryURL = URL(fileURLWithPath: folder) }
         process.standardOutput = FileHandle.nullDevice

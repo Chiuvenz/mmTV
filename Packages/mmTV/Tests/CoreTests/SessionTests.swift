@@ -27,6 +27,7 @@ import Core
     #expect(await session.dispatch(.launch(entry.id), entries: [entry]) == .completed)
     #expect(launcher.launches == 1)
     #expect(launcher.activated == [41])
+    #expect(session.events.map(\.kind) == [.activated, .launched])
 }
 @MainActor @Test func onlyTheCurrentApplicationExitReturnsHome() async {
     let launcher = FakeLauncher(); let session = SessionCoordinator(launcher: launcher)
@@ -41,6 +42,8 @@ import Core
     #expect(session.applicationExited(pid: 42))
     #expect(session.route == nil)
     #expect(session.running.isEmpty)
+    #expect(session.events.first?.kind == .exited)
+    #expect(session.events.first?.title == "B")
 }
 @MainActor @Test func disabledModuleRejectsLaunchAndFailureRecovers() async {
     let launcher = FakeLauncher(); let session = SessionCoordinator(launcher: launcher)
@@ -52,6 +55,7 @@ import Core
     #expect(session.launching == nil)
     #expect(session.running.isEmpty)
     #expect(session.error != nil)
+    #expect(session.events.first?.kind == .failed)
     launcher.failure = nil
     #expect(await session.dispatch(.launch(entry.id), entries: [entry]) == .completed)
 }

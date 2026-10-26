@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 import Contracts
+import MacHost
 
 struct EntryEditor: View {
     @Environment(\.dismiss) private var dismiss
@@ -62,6 +63,11 @@ struct EntryEditor: View {
         if entry.kind == .application { panel.allowedContentTypes = [.application] }
         guard panel.runModal() == .OK, let url = panel.url else { return }
         entry.location = url.path
+        if entry.kind == .application {
+            entry.applicationBundleID = ApplicationLocationResolver.bundleIdentifier(at: url.path)
+        } else {
+            entry.applicationBundleID = nil
+        }
         if entry.title.isEmpty { entry.title = url.deletingPathExtension().lastPathComponent }
     }
     private func chooseResources() {
@@ -74,6 +80,9 @@ struct EntryEditor: View {
             var updated = entry
             updated.title = updated.title.trimmingCharacters(in: .whitespacesAndNewlines)
             updated.arguments = argumentsText.components(separatedBy: .newlines).filter { !$0.isEmpty }
+            updated.applicationBundleID = updated.kind == .application
+                ? ApplicationLocationResolver.bundleIdentifier(at: updated.location)
+                : nil
             updated.trackedBundleID = trackedBundleID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : trackedBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
             updated.resourceDirectory = resources.isEmpty ? nil : resources
             try onSave(updated)

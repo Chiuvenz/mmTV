@@ -45,7 +45,18 @@ import Remote
         } else { isolatedModule = nil }
         launcher = MacApplicationLauncher()
         session = SessionCoordinator(launcher: launcher)
-        do { configuration = try store.load() } catch { loadError = error.localizedDescription }
+        do {
+            var loaded = try store.load()
+            var enriched = false
+            for index in loaded.entries.indices where loaded.entries[index].kind == .application && loaded.entries[index].applicationBundleID == nil {
+                if let bundleID = ApplicationLocationResolver.bundleIdentifier(at: loaded.entries[index].location) {
+                    loaded.entries[index].applicationBundleID = bundleID
+                    enriched = true
+                }
+            }
+            configuration = loaded
+            if enriched { try? store.save(loaded) }
+        } catch { loadError = error.localizedDescription }
         if isPreview { return }
         launcher.onProcessExit = { [weak self] pid in self?.processExited(pid) }
         input.onEvent = { [weak self] event in self?.handle(event) }
@@ -80,6 +91,20 @@ import Remote
     func entries(_ module: ModuleID) -> [AppEntry] { configuration.entries.filter { $0.module == module } }
     var currentEntries: [AppEntry] { session.route.map(entries) ?? [] }
     var runningEntries: [AppEntry] { configuration.entries.filter { session.running[$0.id] != nil } }
+    func resolvedLocation(_ entry: AppEntry) -> String? {
+        ApplicationLocationResolver.resolvedLocation(for: entry)
+    }
+    func health(_ entry: AppEntry) -> EntryHealth {
+        let relocated = resolvedLocation(entry).flatMap { $0 == entry.location ? nil : $0 }
+        return EntryHealthChecker.check(entry, relocatedPath: relocated)
+    }
+    @discardableResult func repairLocationIfNeeded(_ entry: AppEntry) -> AppEntry {
+        guard let location = resolvedLocation(entry), location != entry.location else { return entry }
+        var repaired = entry; repaired.location = location
+        do { try upsert(repaired) }
+        catch { message = "应用已找到，但保存新路径失败：\(error.localizedDescription)" }
+        return repaired
+    }
     var itemCount: Int {
         switch session.route {
         case nil: visibleModules.count
@@ -132,6 +157,7 @@ import Remote
         NSApp.windows.first(where: { $0.identifier?.rawValue == "mmtv.main" })?.makeKeyAndOrderFront(nil)
     }
     func launch(_ entry: AppEntry) {
+        let entry = repairLocationIfNeeded(entry)
         let generation = navigationGeneration
         Task {
             let result = await session.dispatch(.launch(entry.id), entries: configuration.entries, disabled: configuration.disabledModules)
@@ -145,6 +171,29 @@ import Remote
         isEditing = true
     }
     func edit(_ entry: AppEntry) { editor = entry; isEditing = true }
+    func candidateLocation(_ candidate: TVAppCandidate) -> String? {
+        guard let bundleID = candidate.macBundleID else { return nil }
+        return NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path
+    }
+    func candidateIsConnected(_ candidate: TVAppCandidate) -> Bool {
+        guard let bundleID = candidate.macBundleID else { return false }
+        return entries(.video).contains { $0.applicationBundleID == bundleID }
+    }
+    func connect(_ candidate: TVAppCandidate) {
+        guard let bundleID = candidate.macBundleID,
+              let location = candidateLocation(candidate) else {
+            message = "尚未检测到可直接接入的 macOS 应用。请先安装客户端，再回到这里检测。"
+            return
+        }
+        if candidateIsConnected(candidate) { message = "该客户端已经接入。"; return }
+        do {
+            try upsert(.init(title: candidate.title.components(separatedBy: " / ").last ?? candidate.title,
+                             module: .video, location: location,
+                             applicationBundleID: bundleID,
+                             notes: "由 mmTV 应用目录自动接入。"))
+            message = "已接入 \(candidate.title)。"
+        } catch { message = error.localizedDescription }
+    }
     func handle(_ event: RemoteEvent) {
         guard !showingSettings, !isEditing, !showingSetup else { return }
         switch event {
@@ -203,6 +252,41 @@ import Remote
             try store.save(loaded)
             loadError = nil; configuration = loaded
             message = "配置已导入，请检查本机路径。"
+        } catch { message = error.localizedDescription }
+    }
+    func exportDiagnostics() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "mmTV-diagnostics.txt"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let entryLines = configuration.entries.map { entry in
+            "- [\(entry.module.rawValue)] \(entry.title): \(health(entry).title) | \(entry.location) | appBundle=\(entry.applicationBundleID ?? "-") | trackedBundle=\(entry.trackedBundleID ?? "-")"
+        }
+        let eventLines = session.events.map { event in
+            "- \(event.date.ISO8601Format()) [\(event.kind.rawValue)] \(event.title): \(event.detail)"
+        }
+        #if arch(arm64)
+        let architecture = "arm64"
+        #else
+        let architecture = "x86_64"
+        #endif
+        let report = """
+        mmTV diagnostics
+        generated: \(Date.now.ISO8601Format())
+        appVersion: \(version)
+        macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)
+        architecture: \(architecture)
+        globalHomeHotkey: \(input.globalHomeAvailable ? "available" : "unavailable")
+        config: \(store.url.path)
+
+        entries:
+        \(entryLines.isEmpty ? "- none" : entryLines.joined(separator: "\n"))
+
+        recentEvents:
+        \(eventLines.isEmpty ? "- none" : eventLines.joined(separator: "\n"))
+        """
+        do {
+            try report.write(to: url, atomically: true, encoding: .utf8)
+            message = "诊断报告已导出。报告包含本机应用路径，不包含账号口令。"
         } catch { message = error.localizedDescription }
     }
 }

@@ -18,6 +18,20 @@ import Core
     #expect(try Data(contentsOf: store.url.appendingPathExtension("previous")) == first)
     #expect(try store.load().disabledModules == [.assistant])
 }
+
+@Test func olderConfigurationWithoutApplicationBundleIDStillLoads() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let url = folder.appendingPathComponent("config.json")
+    let id = UUID()
+    let json = """
+    {"schemaVersion":1,"entries":[{"id":"\(id.uuidString)","title":"Old","module":"games","kind":"application","location":"/Applications/Old.app","arguments":[],"notes":"","tvInteractionVerified":false}],"disabledModules":[],"tvMode":false}
+    """
+    try Data(json.utf8).write(to: url)
+    let loaded = try ConfigurationStore(url: url).load()
+    #expect(loaded.entries.first?.applicationBundleID == nil)
+}
 @Test func newerConfigurationIsRejectedAndPreserved() throws {
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }

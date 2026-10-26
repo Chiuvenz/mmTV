@@ -133,6 +133,7 @@ struct RootView: View {
         }
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
             ForEach(Array(model.currentEntries.enumerated()), id: \.element.id) { index, entry in
+                let health = model.health(entry)
                 TVCard(selected: model.focus.index == index, action: { model.focus.select(index, count: model.itemCount); model.launch(entry) }) {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
@@ -140,7 +141,7 @@ struct RootView: View {
                             Spacer()
                             if model.session.launching == entry.id { ProgressView().controlSize(.small) }
                             else if model.session.running[entry.id] != nil { StatusPill("运行中", ready: true) }
-                            else { StatusPill(FileManager.default.fileExists(atPath: entry.location) ? "可启动" : "资源离线", ready: false) }
+                            else { StatusPill(health.title, ready: health.isLaunchable) }
                         }
                         Text(entry.title).font(.system(size: 22, weight: .medium)).lineLimit(1)
                         Text(entry.tvInteractionVerified ? "电视交互已由你确认" : "电视交互待验证")
@@ -150,7 +151,9 @@ struct RootView: View {
                 .id(index)
                 .contextMenu {
                     Button("编辑入口") { model.edit(entry) }
-                    Button("在 Finder 中显示") { NSWorkspace.shared.selectFile(entry.location, inFileViewerRootedAtPath: "") }
+                    Button("在 Finder 中显示") {
+                        NSWorkspace.shared.selectFile(model.resolvedLocation(entry) ?? entry.location, inFileViewerRootedAtPath: "")
+                    }
                     if model.session.running[entry.id] != nil {
                         Button("请求应用退出") {
                             if !model.session.requestTermination(entry.id) { model.message = "应用未响应退出请求。请检查应用是否有未保存内容。" }
@@ -177,7 +180,15 @@ struct RootView: View {
                             Text(candidate.detail).font(.system(size: 12)).foregroundStyle(TVTheme.muted)
                         }
                         Spacer()
-                        Link("项目主页 ↗", destination: candidate.source).font(.system(size: 12))
+                        if model.candidateIsConnected(candidate) {
+                            Text("已接入").font(.system(size: 12, weight: .medium)).foregroundStyle(TVTheme.mint)
+                        } else if model.candidateLocation(candidate) != nil {
+                            Button("接入") { model.connect(candidate) }.font(.system(size: 12))
+                        } else {
+                            Link(candidate.macBundleID == nil ? "查看进展 ↗" : "获取客户端 ↗", destination: candidate.download)
+                                .font(.system(size: 12))
+                        }
+                        Link("源码 ↗", destination: candidate.source).font(.system(size: 12))
                     }
                 }
             }.padding(24).background(TVTheme.panel.opacity(0.6), in: RoundedRectangle(cornerRadius: 18))

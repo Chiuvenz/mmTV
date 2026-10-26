@@ -21,5 +21,8 @@ public enum EntryValidation {
         if let bundleID = entry.trackedBundleID, bundleID.trimmingCharacters(in: .whitespaces).isEmpty {
             throw LaunchError.invalid("跟踪 Bundle ID 不能为空，请留空或填写实际值。")
         }
+        if let bundleID = entry.applicationBundleID, bundleID.trimmingCharacters(in: .whitespaces).isEmpty {
+            throw LaunchError.invalid("应用 Bundle ID 不能为空，请重新选择应用。")
+        }
     }
 }

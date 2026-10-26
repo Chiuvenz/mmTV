@@ -33,16 +33,58 @@ public struct AppEntry: Identifiable, Codable, Equatable, Sendable {
     public var kind: LaunchKind
     public var location: String
     public var arguments: [String]
+    /// Bundle identifier of the selected `.app`. It lets a configuration exported
+    /// from another Mac recover when the application lives at a different path.
+    public var applicationBundleID: String?
     public var trackedBundleID: String?
     public var resourceDirectory: String?
     public var notes: String
     public var tvInteractionVerified: Bool
     public init(id: UUID = UUID(), title: String, module: ModuleID, kind: LaunchKind = .application,
-                location: String, arguments: [String] = [], trackedBundleID: String? = nil,
+                location: String, arguments: [String] = [], applicationBundleID: String? = nil,
+                trackedBundleID: String? = nil,
                 resourceDirectory: String? = nil, notes: String = "", tvInteractionVerified: Bool = false) {
         self.id = id; self.title = title; self.module = module; self.kind = kind
-        self.location = location; self.arguments = arguments; self.trackedBundleID = trackedBundleID
+        self.location = location; self.arguments = arguments; self.applicationBundleID = applicationBundleID
+        self.trackedBundleID = trackedBundleID
         self.resourceDirectory = resourceDirectory; self.notes = notes; self.tvInteractionVerified = tvInteractionVerified
+    }
+}
+public enum EntryHealth: Equatable, Sendable {
+    case ready
+    case relocated(String)
+    case missingTarget
+    case missingResources
+    case notExecutable
+
+    public var title: String {
+        switch self {
+        case .ready: "可启动"
+        case .relocated: "已重定位"
+        case .missingTarget: "应用离线"
+        case .missingResources: "资源离线"
+        case .notExecutable: "不可执行"
+        }
+    }
+    public var isLaunchable: Bool {
+        switch self {
+        case .ready, .relocated: true
+        default: false
+        }
+    }
+}
+public enum SessionEventKind: String, Sendable { case launched, activated, exited, failed }
+public struct SessionEvent: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let date: Date
+    public let entryID: UUID
+    public let title: String
+    public let kind: SessionEventKind
+    public let detail: String
+    public init(id: UUID = UUID(), date: Date = .now, entryID: UUID, title: String,
+                kind: SessionEventKind, detail: String) {
+        self.id = id; self.date = date; self.entryID = entryID; self.title = title
+        self.kind = kind; self.detail = detail
     }
 }
 public struct AppConfiguration: Codable, Equatable, Sendable {
