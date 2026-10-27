@@ -10,11 +10,7 @@ fi
 xcodegen generate
 xcodebuild -project mmTV.xcodeproj -scheme mmTV -configuration Release -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
 mkdir -p dist
-app_output="${PWD}/dist/mmTV.app"
-[[ "$app_output" == "${PWD}/dist/mmTV.app" ]] || { echo "Unexpected app output path" >&2; exit 1; }
-if [[ -e "$app_output" ]]; then
-  find "$app_output" -depth -delete
-fi
+rm -rf "${PWD}/dist/mmTV.app"
 ditto build/Build/Products/Release/mmTV.app dist/mmTV.app
 codesign --force --sign "$signing_identity" --options runtime dist/mmTV.app
 ditto -c -k --keepParent dist/mmTV.app dist/mmTV-0.2.0-preview-arm64.zip
