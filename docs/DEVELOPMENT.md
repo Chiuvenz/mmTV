@@ -18,7 +18,7 @@ project.yml 是工程声明源，安装 XcodeGen 后执行 `xcodegen generate` �
 open dist/mmTV.app
 ```
 
-build.sh 生成 Release 应用与 ZIP，当前使用本机 ad-hoc 签名，供本地开发验收。该签名不等同于 Developer ID 公证，不承诺复制到另一台 Mac 后直接通过 Gatekeeper。正式分发需在 Xcode 中配置开发团队、Developer ID 与公证，或在目标 Mac 本机构建。无需关闭 Gatekeeper。
+build.sh 生成 Release 应用与 ZIP。如果钥匙串中存在 Apple Development 身份，脚本会自动用它稳定签名，便于 macOS 持续识别输入监控等本机权限；也可通过 `MMTV_CODE_SIGN_IDENTITY` 显式指定。没有可用身份时回退到 ad-hoc 签名。开发签名不等同于 Developer ID 公证，不承诺复制到另一台 Mac 后直接通过 Gatekeeper。正式分发需配置 Developer ID 与公证，或在目标 Mac 本机构建。无需关闭 Gatekeeper。
 
 构建包括 BiliTVMac 在内的完整 V0.2 候选包：
 
@@ -46,6 +46,8 @@ open -n dist/mmTV.app --args --module video --config /tmp/mmtv-video.json
 - 方向键移动，Enter 进入或启动，Escape 返回，Home 返回主页。
 - Control + Option + H 是注册到系统的全局主页快捷键，可从外部应用切回。
 - 手柄十字键导航、A 确认、B 返回；仅在客厅应用为前台时消费输入。
+- 小米蓝牙语音遥控器 RC003（VID `0x2717` / PID `0x32B8`）直接支持方向、确认、返回、全局 Home、TV/Home、三横线菜单、音量加减和语音触发；无需安装第三方按键驱动。菜单键实测 usage 为 `0x65`，用于打开/关闭右上角菜单。首次使用需在“隐私与安全性 → 输入监控”授权 mmTV，才能读取非标准返回键 `0xF1`。设置页可查看和调整 macOS 系统音量；语音音频尚未接入，电源键不拦截。
+- mmTV 内的主页、模块页、设置、弹窗、编辑页和系统文件面板都保留遥控输入；返回键关闭最上层，Home 直接回主页。文本录入仍属于键盘/维护操作。
 - Command + Control + F 切换全屏；设置可选择下次启动直接全屏。
 - 入口卡片的右键菜单可以编辑、移除、在 Finder 显示或请求应用正常退出。
 - 需要键盘鼠标的首次配置集中在系统设置，日常启动导航不需要打开 Finder。

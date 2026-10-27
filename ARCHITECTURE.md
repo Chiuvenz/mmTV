@@ -53,7 +53,7 @@ flowchart TB
 | 电视界面 | SwiftUI | 卡片、海报、照片墙、播放器与状态展示 |
 | 系统宿主 | AppKit / NSWorkspace | 窗口、激活应用、进程监听、全屏与焦点恢复 |
 | 代码组织 | Xcode + Swift Package Manager | 一个仓库、明确 target 依赖、按模块测试 |
-| 输入 | NSEvent + GameController；遥控器适配层 | 开发期键盘，部署时接真实遥控器；SayAll 为待验收候选 |
+| 输入 | NSEvent + GameController + IOHIDManager | 键盘与手柄走系统事件；小米 RC003 按 VID/PID 读取原始 HID，覆盖非标准返回键与全局 Home，不修改系统键位 |
 | 音乐 | MusicKit | 授权、目录和资料库查询、应用内播放 |
 | 照片 | PhotoKit + ImageIO + AVFoundation | 系统图库访问、目录缩略图与视频播放 |
 | 配置和索引 | Codable JSON + SQLite | JSON 保存小配置；产生媒体索引时引入 SQLite，可用 GRDB |
@@ -71,6 +71,8 @@ flowchart TB
 Shell 只负责入口、导航、焦点恢复、全局 Home、设置、AI 展示和模块状态。功能页面由各模块提供，音乐业务不写进主页，第三方应用按键不散落在全局导航里。
 
 Input 将键盘、遥控器、手柄转换成方向、确认、返回、Home、媒体键及语音按下/松开事件。独立 FocusCoordinator 管理空间导航、焦点记忆、长按重复与返回栈。
+
+当前实体遥控器基线为“小米蓝牙语音遥控器”RC003（VID `0x2717`、PID `0x32B8`、固件 `2671`）。Input 直接监听该设备的原始 HID usage，并与 macOS 产生的普通键盘事件去重；方向、确认、返回、Home、菜单、音量和语音触发进入统一 `RemoteEvent`。三横线菜单键实测为 Keyboard usage `0x65`，用于切换右上角“菜单与设置”。mmTV 内部所有主页、模块页、设置、弹窗和系统文件面板共享分层输入路由，返回键优先关闭最上层。音量键通过 CoreAudio 调整当前 macOS 输出；不支持软件音量的 HDMI 设备明确降级为电视/音响控制。语音键已识别物理触发，等 Hermes 阶段再接 ATVV 音频；电源键不被 mmTV 拦截，避免误触发休眠或关机。
 
 输入按照当前会话路由：在主页由 Shell 消费，在自研页面由当前页面消费，在外部应用中按该应用已验证的映射处理。游戏期间手柄交给游戏，Shell 避免重复消费。全局 Home 与独占全屏应用的行为必须实测，不能只依赖本应用内的键盘监听。
 

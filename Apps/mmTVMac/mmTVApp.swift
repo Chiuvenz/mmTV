@@ -18,7 +18,7 @@ import AppKit
             CommandGroup(replacing: .newItem) {}
             CommandMenu("客厅") {
                 Button("返回主页") { model.returnHome() }.keyboardShortcut("h", modifiers: [.control, .option])
-                Button("设置") { model.showingSettings = true }.keyboardShortcut(",", modifiers: .command)
+                Button("设置") { model.openSettings() }.keyboardShortcut(",", modifiers: .command)
                 Button("切换全屏") { NSApp.keyWindow?.toggleFullScreen(nil) }.keyboardShortcut("f", modifiers: [.control, .command])
             }
         }

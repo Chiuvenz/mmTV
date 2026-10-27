@@ -12,6 +12,16 @@ import Home
 import Assistant
 import Remote
 
+enum SettingsRemoteTarget: Hashable {
+    case done
+    case module(ModuleID)
+    case entry(UUID)
+    case tvMode
+    case volumeDown, volumeUp
+    case requestInputAccess
+    case exportConfiguration, exportDiagnostics, importConfiguration, openConfigurationDirectory
+}
+
 @MainActor @Observable final class AppModel {
     let isPreview: Bool
     let version = "0.2.0-dev"
@@ -34,6 +44,13 @@ import Remote
     private var navigationGeneration = 0
     let isolatedModule: ModuleID?
     var columns = 3
+    var xiaomiRemoteConnected = false
+    var remoteInputAccess = RemoteInputAccessStatus.unknown
+    var settingsFocus = 0
+    var setupFocus = 0
+    var systemVolume: Float32?
+    var showingVolumeHUD = false
+    private var volumeHUDTask: Task<Void, Never>?
 
     init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         isPreview = arguments.contains("--preview-only")
@@ -61,11 +78,20 @@ import Remote
         launcher.onProcessExit = { [weak self] pid in self?.processExited(pid) }
         input.onEvent = { [weak self] event in self?.handle(event) }
         input.onHome = { [weak self] in self?.returnHome() }
-        input.shouldHandleInput = { [weak self] in
-            guard let self else { return false }
-            return !self.showingSettings && !self.isEditing && !self.showingSetup && self.message == nil && NSApp.keyWindow?.identifier?.rawValue == "mmtv.main"
+        input.onXiaomiRemoteConnectionChanged = { [weak self] connected in
+            self?.xiaomiRemoteConnected = connected
+        }
+        input.onRemoteInputAccessChanged = { [weak self] status in
+            self?.remoteInputAccess = status
+        }
+        input.shouldHandleInput = {
+            return NSApp.isActive && NSApp.windows.contains {
+                $0.identifier?.rawValue == "mmtv.main" && $0.isVisible
+            }
         }
         input.start()
+        remoteInputAccess = input.remoteInputAccess
+        systemVolume = SystemVolumeController.currentVolume()
         let center = NSWorkspace.shared.notificationCenter
         observers.append(center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] notification in
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
@@ -151,10 +177,20 @@ import Remote
         showingSettings = false
         showingSetup = false
         isEditing = false
+        message = nil
         Task { await session.dispatch(.showHome, entries: configuration.entries) }
         focus = GridFocus(index: homeFocus)
         NSApp.activate()
         NSApp.windows.first(where: { $0.identifier?.rawValue == "mmtv.main" })?.makeKeyAndOrderFront(nil)
+    }
+    func openSettings() {
+        settingsFocus = 0
+        systemVolume = SystemVolumeController.currentVolume()
+        showingSettings = true
+    }
+    func openSetup() {
+        setupFocus = 0
+        showingSetup = true
     }
     func launch(_ entry: AppEntry) {
         let entry = repairLocationIfNeeded(entry)
@@ -196,7 +232,41 @@ import Remote
         } catch { message = error.localizedDescription }
     }
     func handle(_ event: RemoteEvent) {
-        guard !showingSettings, !isEditing, !showingSetup else { return }
+        if handleSystemModal(event) { return }
+        switch event {
+        case .volumeUp:
+            adjustVolume(by: SystemVolumeController.step)
+            return
+        case .volumeDown:
+            adjustVolume(by: -SystemVolumeController.step)
+            return
+        case .voice:
+            message = "语音键已经识别；语音采集将在 Hermes / ATVV 模块接入后启用。"
+            return
+        case .menu:
+            guard !isEditing else { return }
+            if showingSettings { showingSettings = false }
+            else {
+                message = nil
+                showingSetup = false
+                openSettings()
+            }
+            return
+        default: break
+        }
+        if message != nil {
+            if event == .select || event == .back { message = nil }
+            else if event == .home { returnHome() }
+            return
+        }
+        if showingSettings { handleSettings(event); return }
+        if showingSetup { handleSetup(event); return }
+        if isEditing {
+            if event == .back { isEditing = false }
+            else if event == .home { returnHome() }
+            else { forwardToNativeFocus(event) }
+            return
+        }
         switch event {
         case .home: returnHome()
         case .back:
@@ -208,8 +278,122 @@ import Remote
             } else if session.route == .games || session.route == .video {
                 let list = currentEntries
                 if list.indices.contains(focus.index) { launch(list[focus.index]) } else { addEntry() }
-            } else { showingSetup = true }
-        default: focus.move(event, count: itemCount, columns: columns)
+            } else { openSetup() }
+        case .up, .down, .left, .right:
+            focus.move(event, count: itemCount, columns: columns)
+        case .menu, .volumeUp, .volumeDown, .voice: break
+        }
+    }
+
+    var settingsTargets: [SettingsRemoteTarget] {
+        var targets: [SettingsRemoteTarget] = [.done]
+        targets.append(contentsOf: modules.map { .module($0.id) })
+        targets.append(contentsOf: configuration.entries.map { .entry($0.id) })
+        targets += [.tvMode, .volumeDown, .volumeUp]
+        if remoteInputAccess != .granted { targets.append(.requestInputAccess) }
+        targets += [.exportConfiguration, .exportDiagnostics, .importConfiguration, .openConfigurationDirectory]
+        return targets
+    }
+    var focusedSettingsTarget: SettingsRemoteTarget? {
+        let targets = settingsTargets
+        return targets.indices.contains(settingsFocus) ? targets[settingsFocus] : targets.first
+    }
+    func isSettingsFocused(_ target: SettingsRemoteTarget) -> Bool { focusedSettingsTarget == target }
+    func focusSettings(_ target: SettingsRemoteTarget) {
+        guard let index = settingsTargets.firstIndex(of: target) else { return }
+        settingsFocus = index
+    }
+    func openConfigurationDirectory() {
+        let directory = store.url.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(directory)
+    }
+    func adjustVolume(by delta: Float32) {
+        guard let level = SystemVolumeController.adjust(by: delta) else {
+            systemVolume = nil
+            message = "当前音频输出设备不支持 macOS 软件音量，请改用电视、显示器或音响的音量控制。"
+            return
+        }
+        systemVolume = level
+        showingVolumeHUD = true
+        volumeHUDTask?.cancel()
+        volumeHUDTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.3))
+            guard !Task.isCancelled else { return }
+            self?.showingVolumeHUD = false
+        }
+    }
+    var volumePercent: Int? { systemVolume.map { Int(($0 * 100).rounded()) } }
+
+    private func handleSettings(_ event: RemoteEvent) {
+        switch event {
+        case .back: showingSettings = false
+        case .home: returnHome()
+        case .select:
+            guard let target = focusedSettingsTarget else { return }
+            activateSettings(target)
+        case .up, .left:
+            settingsFocus = max(0, settingsFocus - 1)
+        case .down, .right:
+            settingsFocus = min(max(0, settingsTargets.count - 1), settingsFocus + 1)
+        case .menu, .volumeUp, .volumeDown, .voice: break
+        }
+    }
+    private func activateSettings(_ target: SettingsRemoteTarget) {
+        switch target {
+        case .done: showingSettings = false
+        case .module(let id): setEnabled(id, configuration.disabledModules.contains(id))
+        case .entry(let id):
+            guard let entry = configuration.entries.first(where: { $0.id == id }) else { return }
+            showingSettings = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.edit(entry) }
+        case .tvMode:
+            do { var config = configuration; config.tvMode.toggle(); try save(config) }
+            catch { message = error.localizedDescription }
+        case .volumeDown: adjustVolume(by: -SystemVolumeController.step)
+        case .volumeUp: adjustVolume(by: SystemVolumeController.step)
+        case .requestInputAccess: requestRemoteInputAccess()
+        case .exportConfiguration: exportConfiguration()
+        case .exportDiagnostics: exportDiagnostics()
+        case .importConfiguration: importConfiguration()
+        case .openConfigurationDirectory: openConfigurationDirectory()
+        }
+    }
+    private func handleSetup(_ event: RemoteEvent) {
+        let hasProbe = (session.route == .photos) || (session.route == .music && MusicModule.accountConnectionEnabled)
+        let count = hasProbe ? 2 : 1
+        switch event {
+        case .back: showingSetup = false
+        case .home: returnHome()
+        case .select:
+            if hasProbe && setupFocus == 0 { performProbe() }
+            else { showingSetup = false }
+        case .up, .left: setupFocus = max(0, setupFocus - 1)
+        case .down, .right: setupFocus = min(count - 1, setupFocus + 1)
+        case .menu, .volumeUp, .volumeDown, .voice: break
+        }
+    }
+    private func handleSystemModal(_ event: RemoteEvent) -> Bool {
+        guard let window = NSApp.modalWindow else { return false }
+        switch event {
+        case .back:
+            if let panel = window as? NSSavePanel { panel.cancel(nil) }
+            else { NSApp.abortModal(); window.orderOut(nil) }
+        case .home:
+            if let panel = window as? NSSavePanel { panel.cancel(nil) }
+            else { NSApp.abortModal(); window.orderOut(nil) }
+            returnHome()
+        default: forwardToNativeFocus(event, window: window)
+        }
+        return true
+    }
+    private func forwardToNativeFocus(_ event: RemoteEvent, window: NSWindow? = NSApp.keyWindow) {
+        guard let window else { return }
+        switch event {
+        case .up, .left: window.selectPreviousKeyView(nil)
+        case .down, .right: window.selectNextKeyView(nil)
+        case .select: _ = window.firstResponder?.tryToPerform(#selector(NSResponder.insertNewline(_:)), with: nil)
+        default: break
         }
     }
     func processExited(_ pid: Int32) {
@@ -228,6 +412,13 @@ import Remote
                 probeResult = result + (count.map { " 图库共 \($0) 个资源。" } ?? "")
             }
         }
+    }
+    func requestRemoteInputAccess() {
+        let granted = input.requestRemoteInputAccess()
+        remoteInputAccess = input.remoteInputAccess
+        message = granted
+            ? "输入监控已经授权。若返回键仍无响应，请重新启动 mmTV。"
+            : "请在系统设置的“隐私与安全性 → 输入监控”中允许 mmTV，然后重新启动应用。"
     }
     func exportConfiguration() {
         let panel = NSSavePanel()
@@ -277,6 +468,8 @@ import Remote
         macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)
         architecture: \(architecture)
         globalHomeHotkey: \(input.globalHomeAvailable ? "available" : "unavailable")
+        xiaomiRemote: \(xiaomiRemoteConnected ? "connected" : "disconnected")
+        remoteInputAccess: \(remoteInputAccess.rawValue)
         config: \(store.url.path)
 
         entries:

@@ -118,7 +118,11 @@ public enum LaunchError: LocalizedError, Equatable {
     func activate(_ handle: ApplicationHandle) -> Bool
     func terminate(_ handle: ApplicationHandle) -> Bool
 }
-public enum RemoteEvent: Equatable, Sendable { case up, down, left, right, select, back, home }
+public enum RemoteEvent: Equatable, Sendable {
+    case up, down, left, right
+    case select, back, home, menu
+    case volumeUp, volumeDown, voice
+}
 public enum Action: Equatable, Sendable {
     case showHome
     case openModule(ModuleID)

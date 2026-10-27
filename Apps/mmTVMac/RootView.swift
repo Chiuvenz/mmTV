@@ -41,6 +41,12 @@ struct RootView: View {
         .alert("提示", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("知道了", role: .cancel) { model.message = nil }
         } message: { Text(model.message ?? "") }
+        .overlay(alignment: .top) {
+            if model.showingVolumeHUD, let percent = model.volumePercent {
+                VolumeHUD(percent: percent).padding(.top, 28).transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.16), value: model.showingVolumeHUD)
     }
     private func pageContent(columns: Int) -> some View {
         VStack(alignment: .leading, spacing: 27) {
@@ -64,8 +70,8 @@ struct RootView: View {
             TimelineView(.periodic(from: .now, by: 30)) { context in
                 Text(context.date, format: .dateTime.hour().minute()).font(.system(size: 16, weight: .medium, design: .monospaced)).foregroundStyle(TVTheme.muted)
             }
-            Button { model.showingSettings = true } label: { Image(systemName: "slider.horizontal.3").font(.system(size: 18)).padding(10) }
-                .buttonStyle(.plain).accessibilityLabel("系统设置")
+            Button { model.openSettings() } label: { Image(systemName: "slider.horizontal.3").font(.system(size: 18)).padding(10) }
+                .buttonStyle(.plain).accessibilityLabel("菜单与设置")
         }
         .padding(.horizontal, 42).padding(.top, 26).padding(.bottom, 16)
     }
@@ -197,7 +203,7 @@ struct RootView: View {
             .font(.system(size: 12)).foregroundStyle(TVTheme.muted)
     }
     private func upcomingModule(_ module: ModuleDescriptor) -> some View {
-        TVCard(selected: true, action: { model.showingSetup = true }) {
+        TVCard(selected: true, action: model.openSetup) {
             HStack(alignment: .top, spacing: 24) {
                 Image(systemName: module.symbol).font(.system(size: 40, weight: .ultraLight)).foregroundStyle(color(for: module.id)).frame(width: 60)
                 VStack(alignment: .leading, spacing: 12) {
@@ -215,12 +221,21 @@ struct RootView: View {
             Text(setupDescription(model.session.route ?? .remote)).foregroundStyle(.secondary).lineSpacing(6)
             if model.session.route == .music || model.session.route == .photos {
                 Text(model.session.route == .music ? MusicModule.authorizationDescription : PhotosModule.authorizationDescription).font(.callout)
-                Button(model.loadingProbe ? "正在请求授权…" : "验证系统授权") { model.performProbe() }.disabled(model.loadingProbe || (model.session.route == .music && !MusicModule.accountConnectionEnabled))
+                let canProbe = model.session.route == .photos || (model.session.route == .music && MusicModule.accountConnectionEnabled)
+                Button(model.loadingProbe ? "正在请求授权…" : "验证系统授权") { model.performProbe() }
+                    .disabled(model.loadingProbe || !canProbe)
+                    .remoteSelected(canProbe && model.setupFocus == 0)
                 if let result = model.probeResult { Text(result).font(.callout).foregroundStyle(TVTheme.mint) }
                 Text(model.session.route == .music && !MusicModule.accountConnectionEnabled ? "此预览构建尚未启用 Apple Music 账户连接。需完成开发者签名配置后验证；完整播放器在 V0.3 接入。" : "授权由系统管理；当前版本只做权限验证，完整音乐播放器与影像馆将在 V0.3 接入。")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            HStack { Spacer(); Button("完成") { model.showingSetup = false }.keyboardShortcut(.cancelAction) }
+            HStack {
+                Spacer()
+                let canProbe = model.session.route == .photos || (model.session.route == .music && MusicModule.accountConnectionEnabled)
+                Button("完成") { model.showingSetup = false }
+                    .keyboardShortcut(.cancelAction)
+                    .remoteSelected(!canProbe || model.setupFocus == 1)
+            }
         }.padding(32).frame(width: 560)
     }
     private var footer: some View {
@@ -228,6 +243,7 @@ struct RootView: View {
             Label("方向键移动", systemImage: "arrow.up.arrow.down")
             Text("↵  进入")
             Text("esc  返回")
+            Text("☰  菜单")
             Text("⌃⌥H  主页")
             Spacer()
             Circle().fill(TVTheme.mint).frame(width: 5, height: 5)
@@ -258,6 +274,26 @@ struct RootView: View {
         case .remote: RemoteModule.setupDescription
         default: "在模块中添加你的应用。"
         }
+    }
+}
+private struct VolumeHUD: View {
+    let percent: Int
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: percent == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+            ProgressView(value: Double(percent), total: 100).frame(width: 160)
+            Text("\(percent)%").font(.system(.body, design: .monospaced)).frame(width: 48, alignment: .trailing)
+        }
+        .padding(.horizontal, 20).padding(.vertical, 13)
+        .background(.ultraThickMaterial, in: Capsule())
+        .shadow(radius: 18)
+    }
+}
+private extension View {
+    func remoteSelected(_ selected: Bool) -> some View {
+        self.padding(5)
+            .background(selected ? TVTheme.mint.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 9))
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? TVTheme.mint : .clear, lineWidth: 2))
     }
 }
 private struct AppIcon: View {
