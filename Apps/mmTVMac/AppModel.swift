@@ -18,7 +18,6 @@ enum SettingsRemoteTarget: Hashable {
     case entry(UUID)
     case tvMode
     case volumeDown, volumeUp
-    case requestInputAccess
     case exportConfiguration, exportDiagnostics, importConfiguration, openConfigurationDirectory
 }
 
@@ -42,8 +41,6 @@ enum SettingsRemoteTarget: Hashable {
     private var navigationGeneration = 0
     let isolatedModule: ModuleID?
     var columns = 3
-    var xiaomiRemoteConnected = false
-    var remoteInputAccess = RemoteInputAccessStatus.unknown
     var settingsFocus = 0
     var setupFocus = 0
     var systemVolume: Float32?
@@ -77,19 +74,12 @@ enum SettingsRemoteTarget: Hashable {
         launcher.onProcessExit = { [weak self] pid in self?.processExited(pid) }
         input.onEvent = { [weak self] event in self?.handle(event) }
         input.onHome = { [weak self] in self?.returnHome() }
-        input.onXiaomiRemoteConnectionChanged = { [weak self] connected in
-            self?.xiaomiRemoteConnected = connected
-        }
-        input.onRemoteInputAccessChanged = { [weak self] status in
-            self?.remoteInputAccess = status
-        }
         input.shouldHandleInput = {
             return NSApp.isActive && NSApp.windows.contains {
                 $0.identifier?.rawValue == "mmtv.main" && $0.isVisible
             }
         }
         input.start()
-        remoteInputAccess = input.remoteInputAccess
         systemVolume = SystemVolumeController.currentVolume()
         let center = NSWorkspace.shared.notificationCenter
         observers.append(center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] notification in
@@ -288,7 +278,6 @@ enum SettingsRemoteTarget: Hashable {
         targets.append(contentsOf: modules.map { .module($0.id) })
         targets.append(contentsOf: configuration.entries.map { .entry($0.id) })
         targets += [.tvMode, .volumeDown, .volumeUp]
-        if remoteInputAccess != .granted { targets.append(.requestInputAccess) }
         targets += [.exportConfiguration, .exportDiagnostics, .importConfiguration, .openConfigurationDirectory]
         return targets
     }
@@ -349,7 +338,6 @@ enum SettingsRemoteTarget: Hashable {
             catch { message = error.localizedDescription }
         case .volumeDown: adjustVolume(by: -SystemVolumeController.step)
         case .volumeUp: adjustVolume(by: SystemVolumeController.step)
-        case .requestInputAccess: requestRemoteInputAccess()
         case .exportConfiguration: exportConfiguration()
         case .exportDiagnostics: exportDiagnostics()
         case .importConfiguration: importConfiguration()
@@ -410,13 +398,6 @@ enum SettingsRemoteTarget: Hashable {
             }
         }
     }
-    func requestRemoteInputAccess() {
-        let granted = input.requestRemoteInputAccess()
-        remoteInputAccess = input.remoteInputAccess
-        message = granted
-            ? "输入监控已经授权。若返回键仍无响应，请重新启动 mmTV。"
-            : "请在系统设置的“隐私与安全性 → 输入监控”中允许 mmTV，然后重新启动应用。"
-    }
     func exportConfiguration() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "mmTV-configuration.json"
@@ -464,8 +445,7 @@ enum SettingsRemoteTarget: Hashable {
         macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)
         architecture: \(architecture)
         globalHomeHotkey: \(input.globalHomeAvailable ? "available" : "unavailable")
-        xiaomiRemote: \(xiaomiRemoteConnected ? "connected" : "disconnected")
-        remoteInputAccess: \(remoteInputAccess.rawValue)
+        remoteOwnership: mmTV Remote injects keyboard; mmTV keeps focus only
         config: \(store.url.path)
 
         entries:

@@ -32,7 +32,6 @@ targets:
         INFOPLIST_KEY_NSMusicUsageDescription: 在电视界面中浏览和播放你授权的 Apple Music 内容。
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 在私人影像馆中展示你授权的照片与视频。
         INFOPLIST_KEY_NSMicrophoneUsageDescription: 使用麦克风接收你的语音指令。
-        INFOPLIST_KEY_NSInputMonitoringUsageDescription: 读取已配对遥控器的返回键和主页键，用于控制 mmTV 界面。
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         ENABLE_APP_SANDBOX: NO
         SWIFT_STRICT_CONCURRENCY: complete

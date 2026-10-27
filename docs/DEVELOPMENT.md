@@ -46,8 +46,8 @@ open -n dist/mmTV.app --args --module video --config /tmp/mmtv-video.json
 - 方向键移动，Enter 进入或启动，Escape 返回，Home 返回主页。
 - Control + Option + H 是注册到系统的全局主页快捷键，可从外部应用切回。
 - 手柄十字键导航、A 确认、B 返回；仅在客厅应用为前台时消费输入。
-- 生产方案安装独立的 [mmTV Remote](https://github.com/Chiuvenz/mmTVRemote)。它负责小米蓝牙语音遥控器 RC003（VID `0x2717` / PID `0x32B8`）的 HID、权限、去重、手势、前台 App Profile、系统音量、TV 键启动 mmTV，以及 Typeless/macOS 系统听写。mmTV 不保存其他应用的映射。
-- 当前迁移构建仍由 mmTV 直接读取 RC003，mmTV Remote 的 mmTV Profile 保持静默，二者不会重复注入。切换到最终 Profile 前，输入监控授权仍显示在 mmTV 设置中；完成实体回归后将从 mmTV 删除这套兼容路径。
+- 生产方案安装独立的 [mmTV Remote](https://github.com/Chiuvenz/mmTVRemote)。它负责小米蓝牙语音遥控器 RC003（VID `0x2717` / PID `0x32B8`）的 HID、权限、去重、手势、前台 App Profile、系统音量、TV 键启动 mmTV，以及 Typeless/macOS 系统听写。输入监控与辅助功能授权只授予 mmTV Remote。
+- mmTV Profile 注入：方向键、回车、Esc、Home、F2（菜单开关设置）；音量由 Remote 调整。若本机有覆盖 `com.mmtv.mac` 的用户 Profile，验收前请在 Remote 控制台恢复默认。
 - mmTV 内的主页、模块页、设置、弹窗、编辑页和系统文件面板都保留遥控输入；返回键关闭最上层，Home 直接回主页。文本录入仍属于键盘/维护操作。
 - Command + Control + F 切换全屏；设置可选择下次启动直接全屏。
 - 入口卡片的右键菜单可以编辑、移除、在 Finder 显示或请求应用正常退出。

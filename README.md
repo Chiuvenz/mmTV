@@ -6,7 +6,7 @@
 
 当前已有 macOS 原生开发预览版，阶段为 V0.2 MacBook 开发候选。真实电视、遥控器、具体游戏、账号与音频链路尚未在 Mac mini 验收，未宣告 V0.2 产品验收完成。
 
-物理遥控器、按前台应用切换 Profile、系统音量/媒体动作、菜单栏状态和全局语音输入已经拆分到独立应用 [mmTV Remote](https://github.com/Chiuvenz/mmTVRemote)。mmTV 只负责电视界面内的焦点、返回栈和业务动作；仓库中的 RC003 直连代码暂作为迁移兼容路径保留。
+物理遥控器、按前台应用切换 Profile、系统音量/媒体动作、菜单栏状态和全局语音输入由独立应用 [mmTV Remote](https://github.com/Chiuvenz/mmTVRemote) 独占。mmTV 只消费其注入的标准按键与手柄输入，负责电视界面内的焦点、返回栈和业务动作。
 
 ## 运行
 

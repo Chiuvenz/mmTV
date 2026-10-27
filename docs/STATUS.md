@@ -21,14 +21,12 @@
 - BiliTVMac 自动烟测已在 MacBook 跑通真实匿名接口、20 张内容卡、方向焦点、公开视频开始播放（媒体时间推进）以及返回列表；烟测静音且不使用账号。
 - M4 Mac mini（macOS 27.0.1）已安装 mmTV 与 BiliTVMac；远端成品烟测同样通过 20 张内容卡、方向焦点、真实起播和返回，mmTV 已加载 BiliTVMac 全屏入口且无启动错误。
 - 全局 Control + Option + H 注册；手柄只在应用前台路由；外部游戏退出时恢复主页的状态管理。
-- MacBook 已连接并识别小米 RC003（VID `0x2717`、PID `0x32B8`、固件 `2671`）；实测确认方向、确认、返回 `0xF1`、Home、音量与语音键 usage。Input 已增加目标设备 IOHID 适配、键盘事件去重、长按导航与全局 Home，设置和诊断中分别显示设备连接与输入监控状态。稳定 Apple Development 签名、输入监控授权、设备连接和实体返回键从模块页回到主页的完整链路已在 MacBook 通过。
 - 输入路由已扩展到设置、模块弹窗、提示弹窗、编辑页和系统文件面板；设置和模块弹窗已用键盘等价遥控事件完成焦点高亮、移动、确认与返回实测。
-- 已增加 CoreAudio 系统音量读取/加减、设置页音量显示和主界面音量 HUD；当前输出设备不支持软件音量时会显式提示使用电视/音响。
-- 三横线菜单键已重新采样确认为 Keyboard usage `0x65`；实体遥控器已完成“按一次打开右上角菜单、再按一次关闭”验收。
-- 独立仓库 [mmTVRemote](https://github.com/Chiuvenz/mmTVRemote) 已完成 V0.3：RC003 完整 HID Report、设备级接管和去重、单击/长按/双击、按前台 Bundle Identifier 自动选择 Profile、系统音量/媒体动作、TV 键启动 mmTV、菜单栏控制台、固定 Apple Development 签名、登录启动，以及 Typeless/macOS 系统听写/关闭三种全局语音输入提供商。它可脱离 mmTV 在 MacBook 或 Mac mini 独立运行。
-- mmTV Remote 当前有 23 项核心与运行时测试，Release arm64 构建、Hardened Runtime、固定签名和 ZIP 完整性已通过；MacBook 已验证 RC003 连接和 Finder 前台 Profile 自动切换。实体遥控器逐 App 手感、Typeless F20 以及 Mac mini HDMI 音量仍待人工验收。
+- 设置页保留本机系统音量读取/加减与主界面音量 HUD；遥控器音量键改由 mmTV Remote 调整。当前输出设备不支持软件音量时会显式提示使用电视/音响。
+- 独立仓库 [mmTVRemote](https://github.com/Chiuvenz/mmTVRemote) 已完成 V0.3，并完成 mmTV Profile 键盘注入：方向／确认／返回／Home／F2 菜单、系统音量；语音走全局提供商。mmTV 已删除 `XiaomiRemoteHID` 直连、输入监控授权 UI 与 Info.plist 输入监控说明。
+- mmTV Remote 自动化测试通过；MacBook 已验证 RC003 连接和 Finder 前台 Profile 自动切换。mmTV Profile 实体回归、逐 App 手感、Typeless F20 以及 Mac mini HDMI 音量仍待人工验收。
 
-自动化验证命令：`./Scripts/test.sh`。19 项 Swift 测试通过，包含焦点边界、配置往返与备份、旧配置兼容、全屏配置键兼容、拒绝未来配置、异步入口可用性快照、参数校验、重复启动去重、连续确认防重入、禁用模块、失败恢复、当前应用退出恢复、真实子进程与参数不被 shell 展开、缺失资源拒绝、重复 ID 不覆盖已有配置、BiliTVMac 候选接入约束，以及 RC003 导航/辅助键映射。BiliTVMac 适配器另有 3 项 Node 测试，依赖审计为 0 个已知漏洞。
+自动化验证命令：`./Scripts/test.sh`。Swift 测试覆盖焦点边界、配置往返与备份、旧配置兼容、全屏配置键兼容、拒绝未来配置、异步入口可用性快照、参数校验、重复启动去重、连续确认防重入、禁用模块、失败恢复、当前应用退出恢复、真实子进程与参数不被 shell 展开、缺失资源拒绝、重复 ID 不覆盖已有配置、BiliTVMac 候选接入约束，以及键盘遥控映射（含 F2 菜单）。BiliTVMac 适配器另有 3 项 Node 测试，依赖审计为 0 个已知漏洞。
 
 Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --verify --deep --strict，ZIP 完整性检查通过；当前 MacBook 使用本机 Apple Development 身份和 Hardened Runtime，构建脚本在无可用身份时回退到 ad-hoc。测试与构建日志留在本地 build-tests.log、build/xcode-debug.log、build/release.log，不加入 Git。
 
@@ -37,9 +35,9 @@ Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --ver
 | 项目 | 状态与原因 |
 |---|---|
 | 原生界面视觉 | 主壳在 Mac mini 正常启动；外接 Mi Monitor 调试时处于休眠，尚未完成电视画面人工验收 |
-| 键盘、手柄与全局快捷键 | mmTV 内键盘与实体遥控器已验证；手柄、mmTV Remote 的 TV/Home 全局切回和从第三方全屏应用返回仍待组合实测 |
-| 真正 .app 启动后返 | Apple Development 签名的 Release app 已完成窗口激活、进入模块和实体返回键回主页实测；尚待 Mac mini 复验 |
-| 小米遥控器、语音、HDMI | mmTV Remote 已完成全局能力；仍需完成 mmTV Profile 实体回归、Typeless F20、Mac mini/电视和 HDMI/DisplayPort 音量降级验收 |
+| 键盘、手柄与全局快捷键 | 键盘与注入映射已有自动化覆盖；手柄、mmTV Remote 的 TV/Home 全局切回和从第三方全屏应用返回仍待组合实测 |
+| 真正 .app 启动后返 | Apple Development 签名的 Release app 已完成窗口激活、进入模块和返回键回主页实测；尚待 Mac mini 在 Remote 注入路径下复验 |
+| 小米遥控器、语音、HDMI | 代码侧所有权已切换到 mmTV Remote；仍需完成 mmTV Profile 实体回归（不双触发）、Typeless F20、Mac mini/电视和 HDMI/DisplayPort 音量降级验收 |
 | 塞尔达 | 未访问 Mac mini 的游戏路径和启动器，待在目标机器配置 |
 | YouTube | VacuumTube v2.0.1 官方 ZIP 和 DMG 中的 App 均缺少有效资源签名，严格 codesign/Gatekeeper 校验失败，因此未安装或绕过系统安全 |
 | Bilibili | MacBook 与 Mac mini 均完成匿名浏览和静音播放烟测；二维码登录、账号持久化、可听音频、电视画面与实体遥控器待验收 |
@@ -51,7 +49,7 @@ Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --ver
 
 目标架构由 mmTV Remote 独占物理 RC003、输入监控/辅助功能权限、设备去重、手势、跨 App Profile、系统音量和全局语音提供商；mmTV 只处理标准按键、手柄、页面焦点以及菜单/Home 等应用内语义。
 
-当前尚未完成最后一次所有权切换：mmTV 仍保留早期的 `XiaomiRemoteHID` 直连和 CoreAudio 音量实现，mmTV Remote 的内置 mmTV Profile 因此暂时把所有动作设为 `none`，让 mmTV 自己读取 HID，避免双触发。完成 mmTV Profile 菜单/Home 映射及实体回归后，应关闭并删除 mmTV 的物理 HID、输入监控授权 UI 和重复音量实现；在此之前不得同时启用两套事件输出。
+代码侧所有权切换已完成：mmTV Remote 内置 mmTV Profile 注入键盘事件；mmTV 已移除 HID 直连与输入监控授权 UI。设置页仍可用本机音量按钮微调。回家后请在 Mac mini 上同时安装/更新两应用，确认 Remote 对 `com.mmtv.mac` 使用默认 Profile，再做实体回归（方向、确认、返回、菜单、Home、音量，且每键只触发一次）。
 
 V0.0 的正式签名、音乐和照片仍有待验收项；Mac mini 最小安装实验已通过。V0.1 的实体输入与切换仍待验收；V0.2 已达到 Mac mini 软件链路候选，尚缺电视、音频、账号与实体遥控器验收。当前交付不应当作已完成的家用稳定版本。
 

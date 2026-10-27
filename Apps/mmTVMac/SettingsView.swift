@@ -100,16 +100,9 @@ struct SettingsView: View {
                 }
 
                 Text("全局 Home：⌃⌥H · \(model.input.globalHomeAvailable ? "已注册" : "注册失败，请检查是否与其他应用冲突")")
-                Text("小米蓝牙语音遥控器：\(model.xiaomiRemoteConnected ? "已连接" : "未连接")")
-                HStack {
-                    Text("原始按键输入：\(model.remoteInputAccess.title)")
-                    if model.remoteInputAccess != .granted {
-                        Button("授权输入监控", action: model.requestRemoteInputAccess)
-                            .remoteSelected(model.isSettingsFocused(.requestInputAccess))
-                            .id(SettingsRemoteTarget.requestInputAccess)
-                    }
-                }
-                Text("遥控器可在主页、模块页、设置、弹窗和系统文件面板中使用。音量键调整 macOS 当前输出；不支持软件音量的 HDMI 设备需使用电视或音响。")
+                Text("物理遥控器由独立应用 mmTV Remote 接管；本应用只接收其注入的方向键、回车、Esc、Home 与 F2 菜单。")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("请在 mmTV Remote 中完成输入监控与辅助功能授权。音量键由 Remote 调整 macOS 当前输出；不支持软件音量的 HDMI 设备需使用电视或音响。设置页的音量按钮仍可本机微调。")
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(12)
         }

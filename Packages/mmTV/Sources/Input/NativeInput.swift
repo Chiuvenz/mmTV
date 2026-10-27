@@ -7,11 +7,7 @@ import Contracts
     public var onEvent: ((RemoteEvent) -> Void)?
     public var onHome: (() -> Void)?
     public var shouldHandleInput: (() -> Bool)?
-    public var onXiaomiRemoteConnectionChanged: ((Bool) -> Void)?
-    public var onRemoteInputAccessChanged: ((RemoteInputAccessStatus) -> Void)?
     public private(set) var globalHomeAvailable = false
-    public private(set) var xiaomiRemoteConnected = false
-    public private(set) var remoteInputAccess = RemoteInputAccessStatus.unknown
     private var keyMonitor: Any?
     private var observers: [NSObjectProtocol] = []
     private var hotKey: EventHotKeyRef?
@@ -19,11 +15,9 @@ import Contracts
     private var held: RemoteEvent?
     private var repeatTimer: Timer?
     private var heldSince: Date?
-    private let xiaomiRemote = XiaomiRemoteHID()
-    private var xiaomiHeld: RemoteEvent?
-    private var lastLocalEvent: (event: RemoteEvent, date: Date)?
-    private var lastXiaomiEvent: (event: RemoteEvent, date: Date)?
+
     public init() {}
+
     public func start() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -31,22 +25,15 @@ import Contracts
                 guard let self, self.shouldHandleInput?() ?? true else { return false }
                 if event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
                     if NSApp.keyWindow?.firstResponder is NSTextView { return false }
-                    let mapped: RemoteEvent? = switch event.keyCode {
-                    case 123: .left
-                    case 124: .right
-                    case 125: .down
-                    case 126: .up
-                    case 36, 76: .select
-                    case 53: .back
-                    case 115: .home
-                    default: nil
+                    guard let mapped = KeyboardRemoteMapping.event(forKeyCode: event.keyCode) else {
+                        return false
                     }
-                    if let mapped {
-                        if self.shouldSuppressLocalEvent(mapped) { return true }
-                        self.lastLocalEvent = (mapped, .now)
-                        self.onEvent?(mapped)
+                    if mapped == .home {
+                        self.onHome?()
                         return true
                     }
+                    self.onEvent?(mapped)
+                    return true
                 }
                 return false
             }
@@ -61,41 +48,18 @@ import Contracts
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.setHeld(nil) }
         })
-        xiaomiRemote.onButton = { [weak self] button, pressed in
-            self?.handleXiaomiButton(button, pressed: pressed)
-        }
-        xiaomiRemote.onConnectionChanged = { [weak self] connected in
-            guard let self else { return }
-            self.xiaomiRemoteConnected = connected
-            if !connected, self.xiaomiHeld != nil {
-                self.xiaomiHeld = nil
-                self.setHeld(nil)
-            }
-            self.onXiaomiRemoteConnectionChanged?(connected)
-        }
-        refreshRemoteInputAccess()
-        xiaomiRemote.start()
         configureControllers()
         registerHomeHotKey()
     }
-    @discardableResult public func requestRemoteInputAccess() -> Bool {
-        let granted = XiaomiRemoteHID.requestAccess()
-        refreshRemoteInputAccess()
-        return granted
-    }
-    public func refreshRemoteInputAccess() {
-        remoteInputAccess = XiaomiRemoteHID.accessStatus
-        onRemoteInputAccessChanged?(remoteInputAccess)
-    }
+
     public func stop() {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }; keyMonitor = nil
         observers.forEach(NotificationCenter.default.removeObserver); observers = []
         repeatTimer?.invalidate(); repeatTimer = nil; held = nil
-        xiaomiHeld = nil
-        xiaomiRemote.stop()
         if let hotKey { UnregisterEventHotKey(hotKey) }; hotKey = nil
         if let hotKeyHandler { RemoveEventHandler(hotKeyHandler) }; hotKeyHandler = nil
     }
+
     private func registerHomeHotKey() {
         var type = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         let pointer = Unmanaged.passUnretained(self).toOpaque()
@@ -109,6 +73,7 @@ import Contracts
         let id = EventHotKeyID(signature: 0x4D4D5456, id: 1)
         globalHomeAvailable = RegisterEventHotKey(UInt32(kVK_ANSI_H), UInt32(controlKey | optionKey), id, GetApplicationEventTarget(), 0, &hotKey) == noErr
     }
+
     private func configureControllers() {
         for controller in GCController.controllers() {
             guard let gamepad = controller.extendedGamepad else { continue }
@@ -125,40 +90,6 @@ import Contracts
                 Task { @MainActor in if NSApp.isActive { self?.onEvent?(.back) } }
             }
         }
-    }
-    private func handleXiaomiButton(_ button: XiaomiRemoteButton, pressed: Bool) {
-        guard let event = button.remoteEvent else { return }
-        if !pressed {
-            if xiaomiHeld == event {
-                xiaomiHeld = nil
-                setHeld(nil)
-            }
-            return
-        }
-
-        let recentlyHandledLocally = lastLocalEvent.map {
-            $0.event == event && Date.now.timeIntervalSince($0.date) < 0.15
-        } ?? false
-        lastXiaomiEvent = (event, .now)
-
-        if event == .home {
-            if !recentlyHandledLocally { onHome?() }
-            return
-        }
-        guard NSApp.isActive, shouldHandleInput?() ?? true else { return }
-        if event.isRepeatable {
-            xiaomiHeld = event
-            setHeld(event, emitInitial: !recentlyHandledLocally)
-        } else if !recentlyHandledLocally {
-            onEvent?(event)
-        }
-    }
-
-    private func shouldSuppressLocalEvent(_ event: RemoteEvent) -> Bool {
-        if xiaomiHeld == event { return true }
-        return lastXiaomiEvent.map {
-            $0.event == event && Date.now.timeIntervalSince($0.date) < 0.15
-        } ?? false
     }
 
     private func setHeld(_ direction: RemoteEvent?, emitInitial: Bool = true) {
@@ -177,11 +108,21 @@ import Contracts
     }
 }
 
-private extension RemoteEvent {
-    var isRepeatable: Bool {
-        switch self {
-        case .up, .down, .left, .right, .volumeUp, .volumeDown: true
-        case .select, .back, .home, .menu, .voice: false
+/// Keyboard events injected by mmTV Remote (and physical keyboards) into mmTV focus routing.
+public enum KeyboardRemoteMapping {
+    public static let menuKeyCode: UInt16 = 120 // F2
+
+    public static func event(forKeyCode keyCode: UInt16) -> RemoteEvent? {
+        switch keyCode {
+        case 123: .left
+        case 124: .right
+        case 125: .down
+        case 126: .up
+        case 36, 76: .select
+        case 53: .back
+        case 115: .home
+        case menuKeyCode: .menu
+        default: nil
         }
     }
 }
