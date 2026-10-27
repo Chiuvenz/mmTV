@@ -15,18 +15,16 @@
 - 应用启动与激活；直接传递可执行文件参数；启动器与真正游戏 Bundle ID 分开跟踪。
 - `.app` Bundle ID 元数据、跨 Mac 自动重定位与路径修复；旧版配置无需迁移即可继续读取。
 - 入口健康检查、最近 50 条运行事件和可导出的本机诊断报告。
-- VacuumTube 安装检测与一键接入目录；BiliTVMac 以独立 Bundle ID 自动检测并带电视全屏参数接入。
-- BiliTV v2.5.1 官方发布包的固定版本下载、SHA-256 校验、解包与独立 Electron 适配器；上游二进制保持在忽略目录，不混入仓库。
-- BiliTVMac 已实现隔离 PalmServiceBridge、本机服务宿主、独立状态目录和仅回环媒体代理；禁用上游 LAN 投屏监听并限制网页权限、导航和服务命名空间。
-- BiliTVMac 自动烟测已在 MacBook 跑通真实匿名接口、20 张内容卡、方向焦点、公开视频开始播放（媒体时间推进）以及返回列表；烟测静音且不使用账号。
-- M4 Mac mini（macOS 27.0.1）已安装 mmTV 与 BiliTVMac；远端成品烟测同样通过 20 张内容卡、方向焦点、真实起播和返回，mmTV 已加载 BiliTVMac 全屏入口且无启动错误。
+- VacuumTube 安装检测与一键接入目录；BiliTVMac 以独立 Bundle ID `com.mmtv.bilitv` 自动检测并带 `--tv-fullscreen` 接入。
+- BiliTVMac 适配器（上游拉取、Electron 运行时、烟测）已迁至独立仓库 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)；本仓仅保留启动器契约与 `Integrations/README.md` 指针。
+- 迁出前证据：BiliTVMac 在 MacBook / M4 Mac mini 跑通匿名接口、方向焦点、公开视频起播与返回；mmTV 加载全屏入口无启动错误。
 - 全局 Control + Option + H 注册；手柄只在应用前台路由；外部游戏退出时恢复主页的状态管理。
 - 输入路由已扩展到设置、模块弹窗、提示弹窗、编辑页和系统文件面板；设置和模块弹窗已用键盘等价遥控事件完成焦点高亮、移动、确认与返回实测。
 - 设置页保留本机系统音量读取/加减与主界面音量 HUD；遥控器音量键改由 mmTV Remote 调整。当前输出设备不支持软件音量时会显式提示使用电视/音响。
 - 独立仓库 [mmTVRemote](https://github.com/Chiuvenz/mmTVRemote) 已完成 V0.3，并完成 mmTV Profile 键盘注入：方向／确认／返回／Home／F2 菜单、系统音量；语音走全局提供商。mmTV 已删除 `XiaomiRemoteHID` 直连、输入监控授权 UI 与 Info.plist 输入监控说明。
 - mmTV Remote 自动化测试通过；MacBook 已验证 RC003 连接和 Finder 前台 Profile 自动切换。mmTV Profile 实体回归、逐 App 手感、Typeless F20 以及 Mac mini HDMI 音量仍待人工验收。
 
-自动化验证命令：`./Scripts/test.sh`。Swift 测试覆盖焦点边界、配置往返与备份、旧配置兼容、全屏配置键兼容、拒绝未来配置、异步入口可用性快照、参数校验、重复启动去重、连续确认防重入、禁用模块、失败恢复、当前应用退出恢复、真实子进程与参数不被 shell 展开、缺失资源拒绝、重复 ID 不覆盖已有配置、BiliTVMac 候选接入约束，以及键盘遥控映射（含 F2 菜单）。BiliTVMac 适配器另有 3 项 Node 测试，依赖审计为 0 个已知漏洞。
+自动化验证命令：`./Scripts/test.sh`。Swift 测试覆盖焦点边界、配置往返与备份、旧配置兼容、全屏配置键兼容、拒绝未来配置、异步入口可用性快照、参数校验、重复启动去重、连续确认防重入、禁用模块、失败恢复、当前应用退出恢复、真实子进程与参数不被 shell 展开、缺失资源拒绝、重复 ID 不覆盖已有配置、BiliTVMac 候选接入约束（Bundle ID / 全屏参数），以及键盘遥控映射（含 F2 菜单）。适配器 Node 测试改在 mmTVAdapters 仓库运行。
 
 Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --verify --deep --strict，ZIP 完整性检查通过；当前 MacBook 使用本机 Apple Development 身份和 Hardened Runtime，构建脚本在无可用身份时回退到 ad-hoc。测试与构建日志留在本地 build-tests.log、build/xcode-debug.log、build/release.log，不加入 Git。
 

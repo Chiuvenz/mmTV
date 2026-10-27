@@ -1,6 +1,6 @@
 # 视频应用接入记录
 
-状态：通用本机应用/启动器适配已实现；BiliTVMac 达到 MacBook 开发候选，VacuumTube 与两者的账号/目标设备链路仍待验收。
+状态：通用本机应用/启动器适配已实现；BiliTVMac 适配器源码在 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)，VacuumTube 与两者的账号/目标设备链路仍待验收。
 
 ## YouTube
 
@@ -16,13 +16,15 @@
 
 候选：[BiliTV for webOS](https://github.com/asdf17128/bili-webos)，React/Vite 电视客户端，具有独立 webOS 服务端能力。
 
-本次核实其应用目录与构建定义。2026-10-26 的上游最新发布为 v2.5.1，产物是 `com.biliwebos.app_2.5.1_all.ipk`，依赖 webOS 的 Luna service 与本机媒体代理，不能直接当作 macOS `.app` 安装，因此由 mmTV 提供独立适配器。
+macOS 适配器 **BiliTVMac**（Bundle ID `com.mmtv.bilitv`）维护在独立仓库 [Chiuvenz/mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)（本地 `~/vibeCoding/mmTVAdapters`），不嵌入 mmTV 进程或本仓 `Integrations/`。
 
-`Scripts/fetch-bilitv.sh` 固定下载官方 v2.5.1 `.ipk`，校验 GitHub 发布的 SHA-256 后解包到不入库的 `External/BiliTV/`。发布包审计确认前端依赖 `PalmServiceBridge`，Node 服务依赖 `webos-service`、`/media/internal` 状态目录和 `127.0.0.1:7654` 媒体代理。适配边界记录在 `Integrations/BiliTV/adapter-manifest.json`。
+mmTV 侧契约：
 
-`Integrations/BiliTVMac/` 已实现独立 Electron 运行时、PalmServiceBridge 到本地 IPC 的 shim、macOS 状态目录和服务生命周期，并打包为 Bundle ID `com.mmtv.bilitv`。MacBook 自动烟测已验证匿名列表、方向焦点、真实媒体解码起播和返回；二维码登录、账号状态、可听音频与目标电视链路留到实机验收。运行时保持本应用私有，确认第二个复用需求后才公共化。
+1. 检测已安装的 `com.mmtv.bilitv`
+2. 以 Launch Services / `NSWorkspace` 打开，并传入 `--tv-fullscreen`
+3. 未安装时引导至适配器仓库构建说明，不退回普通 B 站桌面网页
 
-当前 UI 会检测 `com.mmtv.bilitv` 并提供接入；未安装时链接到适配器构建说明，不会退回普通 B 站桌面网页来声称完成电视版集成。
+构建与烟测、上游 v2.5.1 拉取与 SHA-256、Electron 运行时细节见适配器仓库 README。
 
 ## 所有第三方应用共用的能力边界
 

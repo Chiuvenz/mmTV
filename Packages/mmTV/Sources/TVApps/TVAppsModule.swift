@@ -34,10 +34,10 @@ public enum TVAppsModule {
               source: "https://github.com/shy1132/VacuumTube",
               macBundleID: "rocks.shy.VacuumTube",
               download: "https://github.com/shy1132/VacuumTube/releases/latest"),
-        .init(id: "bilibili", title: "Bilibili / BiliTVMac", detail: "mmTV 独立 Mac 适配器；安装后可自动检测并以电视全屏模式启动。",
+        .init(id: "bilibili", title: "Bilibili / BiliTVMac", detail: "独立 App 适配器（mmTVAdapters）；安装后按 Bundle ID 自动检测并以电视全屏模式启动。",
               source: "https://github.com/asdf17128/bili-webos",
               macBundleID: "com.mmtv.bilitv",
-              download: "https://github.com/Chiuvenz/mmTV/tree/main/Integrations/BiliTVMac",
+              download: "https://github.com/Chiuvenz/mmTVAdapters",
               launchArguments: ["--tv-fullscreen"])
     ].compactMap { $0 }
     public static func entries(in configuration: AppConfiguration) -> [AppEntry] {
