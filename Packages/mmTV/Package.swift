@@ -10,7 +10,7 @@ let package = Package(
     targets: [
         .target(name: "Contracts"),
         .target(name: "Core", dependencies: ["Contracts"]),
-        .target(name: "MacHost", dependencies: ["Contracts"]),
+        .target(name: "MacHost", dependencies: ["Contracts", "Core"]),
         .target(name: "Input", dependencies: ["Contracts"]),
         .target(name: "DesignSystem", dependencies: ["Contracts"]),
         .target(name: "Games", dependencies: ["Contracts"]),

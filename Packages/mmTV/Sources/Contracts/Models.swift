@@ -51,6 +51,7 @@ public struct AppEntry: Identifiable, Codable, Equatable, Sendable {
     }
 }
 public enum EntryHealth: Equatable, Sendable {
+    case checking
     case ready
     case relocated(String)
     case missingTarget
@@ -59,6 +60,7 @@ public enum EntryHealth: Equatable, Sendable {
 
     public var title: String {
         switch self {
+        case .checking: "正在检查"
         case .ready: "可启动"
         case .relocated: "已重定位"
         case .missingTarget: "应用离线"
@@ -92,6 +94,12 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var entries: [AppEntry] = []
     public var disabledModules: Set<ModuleID> = []
     public var tvMode: Bool = false
+    /// Source-compatible product name; Codable continues to persist `tvMode`
+    /// so existing configuration files remain valid.
+    public var launchInFullScreen: Bool {
+        get { tvMode }
+        set { tvMode = newValue }
+    }
     public init() {}
 }
 public struct ApplicationHandle: Equatable, Sendable {

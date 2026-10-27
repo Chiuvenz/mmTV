@@ -1,4 +1,5 @@
 import SwiftUI
+import Contracts
 
 public enum TVTheme {
     public static let background = Color(red: 0.035, green: 0.052, blue: 0.076)
@@ -7,6 +8,33 @@ public enum TVTheme {
     public static let muted = Color(red: 0.57, green: 0.64, blue: 0.70)
     public static let mint = Color(red: 0.67, green: 0.87, blue: 0.75)
     public static let amber = Color(red: 0.94, green: 0.74, blue: 0.43)
+    public static let video = Color(red: 0.55, green: 0.73, blue: 0.92)
+    public static let music = Color(red: 0.92, green: 0.57, blue: 0.60)
+    public static let photos = Color(red: 0.76, green: 0.67, blue: 0.92)
+
+    public static func accent(for module: ModuleID) -> Color {
+        switch module {
+        case .games: amber
+        case .video: video
+        case .music: music
+        case .photos: photos
+        default: mint
+        }
+    }
+}
+
+public extension View {
+    func remoteSelected(_ selected: Bool) -> some View {
+        padding(5)
+            .background(
+                selected ? TVTheme.mint.opacity(0.16) : .clear,
+                in: RoundedRectangle(cornerRadius: 9)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(selected ? TVTheme.mint : .clear, lineWidth: 2)
+            }
+    }
 }
 
 public struct TVCard<Content: View>: View {

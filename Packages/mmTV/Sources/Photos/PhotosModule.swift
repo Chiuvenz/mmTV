@@ -18,9 +18,11 @@ public enum PhotosModule {
         _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         return authorizationDescription
     }
-    public static func assetCountIfAuthorized() -> Int? {
+    public static func assetCountIfAuthorized() async -> Int? {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return nil }
-        return PHAsset.fetchAssets(with: nil).count
+        return await Task.detached(priority: .utility) {
+            PHAsset.fetchAssets(with: nil).count
+        }.value
     }
 }

@@ -5,16 +5,15 @@ import DesignSystem
 import Input
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @Bindable var model: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 Text("客厅设置").font(.title2)
                 Spacer()
-                Button("完成") { model.showingSettings = false; dismiss() }
+                Button("完成") { model.dismissPresentation() }
                     .keyboardShortcut(.cancelAction)
-                    .settingsRemoteSelected(model.isSettingsFocused(.done))
+                    .remoteSelected(model.isSettingsFocused(.done))
                     .id(SettingsRemoteTarget.done)
             }
             ScrollViewReader { proxy in
@@ -45,7 +44,7 @@ struct SettingsView: View {
                         Label(module.title, systemImage: module.symbol)
                     }
                     .toggleStyle(.switch)
-                    .settingsRemoteSelected(model.isSettingsFocused(target))
+                    .remoteSelected(model.isSettingsFocused(target))
                     .id(target)
                 }
             }.padding(12)
@@ -62,16 +61,17 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(entry.title)
                             Text(entry.location).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                            Text(model.health(entry).title).font(.caption2)
-                                .foregroundStyle(model.health(entry).isLaunchable ? TVTheme.mint : TVTheme.amber)
+                            let health = model.health(entry)
+                            Text(health.title).font(.caption2)
+                                .foregroundStyle(health.isLaunchable ? TVTheme.mint : TVTheme.amber)
                         }
                         Spacer()
                         Button("编辑") {
-                            model.focusSettings(target); model.showingSettings = false; dismiss()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { model.edit(entry) }
+                            model.focusSettings(target)
+                            model.edit(entry)
                         }
                     }
-                    .settingsRemoteSelected(model.isSettingsFocused(target))
+                    .remoteSelected(model.isSettingsFocused(target))
                     .id(target)
                 }
             }.padding(12)
@@ -81,11 +81,11 @@ struct SettingsView: View {
     private var inputSettings: some View {
         GroupBox("显示、遥控与音量") {
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("下次启动时进入电视全屏模式", isOn: Binding(get: { model.configuration.tvMode }, set: { value in
-                    do { var config = model.configuration; config.tvMode = value; try model.save(config) }
+                Toggle("下次启动时进入电视全屏模式", isOn: Binding(get: { model.configuration.launchInFullScreen }, set: { value in
+                    do { var config = model.configuration; config.launchInFullScreen = value; try model.save(config) }
                     catch { model.message = error.localizedDescription }
                 }))
-                .settingsRemoteSelected(model.isSettingsFocused(.tvMode))
+                .remoteSelected(model.isSettingsFocused(.tvMode))
                 .id(SettingsRemoteTarget.tvMode)
 
                 HStack(spacing: 12) {
@@ -94,9 +94,9 @@ struct SettingsView: View {
                     Text(model.volumePercent.map { "\($0)%" } ?? "不可调")
                         .font(.system(.body, design: .monospaced)).frame(width: 58, alignment: .trailing)
                     Button { model.focusSettings(.volumeDown); model.adjustVolume(by: -SystemVolumeController.step) } label: { Image(systemName: "minus") }
-                        .settingsRemoteSelected(model.isSettingsFocused(.volumeDown)).id(SettingsRemoteTarget.volumeDown)
+                        .remoteSelected(model.isSettingsFocused(.volumeDown)).id(SettingsRemoteTarget.volumeDown)
                     Button { model.focusSettings(.volumeUp); model.adjustVolume(by: SystemVolumeController.step) } label: { Image(systemName: "plus") }
-                        .settingsRemoteSelected(model.isSettingsFocused(.volumeUp)).id(SettingsRemoteTarget.volumeUp)
+                        .remoteSelected(model.isSettingsFocused(.volumeUp)).id(SettingsRemoteTarget.volumeUp)
                 }
 
                 Text("全局 Home：⌃⌥H · \(model.input.globalHomeAvailable ? "已注册" : "注册失败，请检查是否与其他应用冲突")")
@@ -105,7 +105,7 @@ struct SettingsView: View {
                     Text("原始按键输入：\(model.remoteInputAccess.title)")
                     if model.remoteInputAccess != .granted {
                         Button("授权输入监控", action: model.requestRemoteInputAccess)
-                            .settingsRemoteSelected(model.isSettingsFocused(.requestInputAccess))
+                            .remoteSelected(model.isSettingsFocused(.requestInputAccess))
                             .id(SettingsRemoteTarget.requestInputAccess)
                     }
                 }
@@ -153,7 +153,7 @@ struct SettingsView: View {
 
     private func settingsButton(_ title: String, _ target: SettingsRemoteTarget, action: @escaping () -> Void) -> some View {
         Button(title) { model.focusSettings(target); action() }
-            .settingsRemoteSelected(model.isSettingsFocused(target))
+            .remoteSelected(model.isSettingsFocused(target))
             .id(target)
     }
     private func eventSymbol(_ kind: SessionEventKind) -> String {
@@ -163,13 +163,5 @@ struct SettingsView: View {
         case .exited: "stop.fill"
         case .failed: "exclamationmark.triangle.fill"
         }
-    }
-}
-
-private extension View {
-    func settingsRemoteSelected(_ selected: Bool) -> some View {
-        self.padding(5)
-            .background(selected ? TVTheme.mint.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? TVTheme.mint : .clear, lineWidth: 2))
     }
 }

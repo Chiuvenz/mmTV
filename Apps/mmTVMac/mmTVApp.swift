@@ -10,7 +10,9 @@ import AppKit
                 .frame(minWidth: 920, minHeight: 650)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, Locale(identifier: "zh_CN"))
-                .background(WindowSetup(tvMode: model.configuration.tvMode))
+                .background(LaunchWindowSetup(
+                    launchInFullScreen: model.configuration.launchInFullScreen
+                ))
         }
         .defaultSize(width: 1280, height: 850)
         .windowStyle(.hiddenTitleBar)
@@ -36,18 +38,36 @@ import AppKit
         NSApp.windows.first?.makeKeyAndOrderFront(nil); return true
     }
 }
-private struct WindowSetup: NSViewRepresentable {
-    let tvMode: Bool
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            window.identifier = NSUserInterfaceItemIdentifier("mmtv.main")
-            window.titlebarAppearsTransparent = true
-            window.backgroundColor = NSColor(red: 0.035, green: 0.052, blue: 0.076, alpha: 1)
-            if tvMode && !window.styleMask.contains(.fullScreen) { window.toggleFullScreen(nil) }
-        }
+private struct LaunchWindowSetup: NSViewRepresentable {
+    let launchInFullScreen: Bool
+
+    func makeNSView(context: Context) -> WindowAttachmentView {
+        let view = WindowAttachmentView()
+        view.launchInFullScreen = launchInFullScreen
         return view
     }
-    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    func updateNSView(_ nsView: WindowAttachmentView, context: Context) {
+        // This preference intentionally applies only when the window is first attached.
+        nsView.launchInFullScreen = launchInFullScreen
+    }
+}
+
+@MainActor
+private final class WindowAttachmentView: NSView {
+    var launchInFullScreen = false
+    private var configuredWindow: ObjectIdentifier?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window,
+              configuredWindow != ObjectIdentifier(window) else { return }
+        configuredWindow = ObjectIdentifier(window)
+        window.identifier = NSUserInterfaceItemIdentifier("mmtv.main")
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = NSColor(red: 0.035, green: 0.052, blue: 0.076, alpha: 1)
+        if launchInFullScreen && !window.styleMask.contains(.fullScreen) {
+            window.toggleFullScreen(nil)
+        }
+    }
 }

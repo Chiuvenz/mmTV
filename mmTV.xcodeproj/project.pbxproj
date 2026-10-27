@@ -12,7 +12,9 @@
 		1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */; };
 		271A68FB41212D9A3023DC4C /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = DB0F1A2943F2697ED7AE2F70 /* DesignSystem */; };
 		575AC3DF418735F89047BFE8 /* TVApps in Frameworks */ = {isa = PBXBuildFile; productRef = 089211EBB28359DAFCCC65CE /* TVApps */; };
+		58EB47577D852D2FB9C28730 /* AppConfigurationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F720B7A73EA6755EF76CA6 /* AppConfigurationController.swift */; };
 		62EA25E57E5559CE60E523AE /* MacHost in Frameworks */ = {isa = PBXBuildFile; productRef = 99B5E419FA6A8D427D063DF5 /* MacHost */; };
+		7C9AA65C7FF2EB362C19137C /* AppPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67EA4191DFA6DD97C58F06A /* AppPresentation.swift */; };
 		80D92E48A6E3BC28305C8C5E /* Assistant in Frameworks */ = {isa = PBXBuildFile; productRef = 7E7F63350F8CC2B6D6A9579C /* Assistant */; };
 		83E4545AC23B203D293079DD /* Music in Frameworks */ = {isa = PBXBuildFile; productRef = 62F184A10247D2C36A970B5E /* Music */; };
 		84265BF0E90F5494D67957EF /* EntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7249AD04AA9359CBE7307C76 /* EntryEditor.swift */; };
@@ -36,6 +38,8 @@
 		BBA410CF762649D0E6D007B4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		C5E98F850FF4969BDCD7AC54 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C877569049113226D1C515C2 /* mmTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mmTVApp.swift; sourceTree = "<group>"; };
+		F2F720B7A73EA6755EF76CA6 /* AppConfigurationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigurationController.swift; sourceTree = "<group>"; };
+		F67EA4191DFA6DD97C58F06A /* AppPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPresentation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,7 +76,9 @@
 		22DD3AD297541770FF06981C /* mmTVMac */ = {
 			isa = PBXGroup;
 			children = (
+				F2F720B7A73EA6755EF76CA6 /* AppConfigurationController.swift */,
 				4CB19130A18E538B1B692795 /* AppModel.swift */,
+				F67EA4191DFA6DD97C58F06A /* AppPresentation.swift */,
 				7249AD04AA9359CBE7307C76 /* EntryEditor.swift */,
 				C877569049113226D1C515C2 /* mmTVApp.swift */,
 				52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */,
@@ -174,7 +180,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				58EB47577D852D2FB9C28730 /* AppConfigurationController.swift in Sources */,
 				84E3DADCE82FB2C30592DFB2 /* AppModel.swift in Sources */,
+				7C9AA65C7FF2EB362C19137C /* AppPresentation.swift in Sources */,
 				84265BF0E90F5494D67957EF /* EntryEditor.swift in Sources */,
 				1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */,
 				E0B8D0568FF183A0CD908A38 /* RootView.swift in Sources */,

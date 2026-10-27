@@ -32,6 +32,20 @@ import Core
     let loaded = try ConfigurationStore(url: url).load()
     #expect(loaded.entries.first?.applicationBundleID == nil)
 }
+
+@Test func fullScreenPreferenceKeepsLegacyJSONKey() throws {
+    var configuration = AppConfiguration()
+    configuration.launchInFullScreen = true
+
+    let data = try JSONEncoder().encode(configuration)
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+    #expect(json["tvMode"] as? Bool == true)
+    #expect(json["launchInFullScreen"] == nil)
+
+    let decoded = try JSONDecoder().decode(AppConfiguration.self, from: data)
+    #expect(decoded.launchInFullScreen)
+}
 @Test func newerConfigurationIsRejectedAndPreserved() throws {
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }

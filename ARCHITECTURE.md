@@ -1,6 +1,6 @@
 # mmTV 技术架构方案
 
-版本：方案 v1 · 2026-10-26 · 状态：架构基线；当前实现与未验收项见 [docs/STATUS.md](docs/STATUS.md)。
+版本：方案 v1.1 · 2026-10-27 · 状态：架构基线；已纳入独立的 [mmTVRemote](https://github.com/Chiuvenz/mmTVRemote)，当前实现与未验收项见 [docs/STATUS.md](docs/STATUS.md)。
 
 目标：以 Mac mini 为家庭主机，为电视提供遥控器优先的娱乐、影像、音乐、家居和 AI 体验，并逐步开放手机和平板控制。MacBook 用于开发、打包和远程维护。
 
@@ -8,7 +8,7 @@
 
 采用 **SwiftUI + AppKit 原生主应用、按功能划分的 Swift 模块、独立运行的外部服务**。
 
-第一阶段安装一个 mmTV.app。音乐、照片、游戏、视频、家居、AI 各自拥有明确接口、页面、配置和测试入口，可以分别启用、开发与验收。Hermes、Home Assistant、游戏及第三方视频应用保持独立进程。
+第一阶段安装 mmTV.app 与常驻菜单栏应用 mmTV Remote。音乐、照片、游戏、视频、家居、AI 各自拥有明确接口、页面、配置和测试入口，可以分别启用、开发与验收。mmTV Remote、Hermes、Home Assistant、游戏及第三方视频应用保持独立进程。
 
 代码独立和进程独立分开处理：自研模块先在同一应用内运行，减少部署成本；涉及第三方运行时、长任务、兼容实验或持续后台服务时才使用独立进程。每个模块都可替换，但首版不建设动态插件市场、微服务平台或通用操作系统兼容框架。
 
@@ -25,8 +25,12 @@
 
 ```mermaid
 flowchart TB
-  Remote[遥控器 / 键盘 / 手柄] --> Input[Input：输入归一与焦点]
-  Input --> Shell[mmTV.app：主页、导航、系统面板]
+  PhysicalRemote[小米蓝牙遥控器] --> RemoteService[mmTV Remote：HID、Profile、系统动作]
+  RemoteService -->|按前台 App 映射按键| AppInput[mmTV Input：应用内事件与焦点]
+  RemoteService -->|应用 Profile| ExternalApps[游戏 / 视频 / 浏览器]
+  RemoteService -->|语音键| VoiceProvider[Typeless / 系统听写]
+  Keyboard[键盘 / 手柄] --> AppInput
+  AppInput --> Shell[mmTV.app：主页、导航、系统面板]
   Shell --> Core[Core：动作路由、会话、模块状态]
   Core --> Games[Games：游戏目录与启动]
   Core --> Video[TVApps：第三方视频接入]
@@ -35,16 +39,16 @@ flowchart TB
   Core --> Home[Home：家庭设备与场景]
   Core --> AI[Assistant：语音与 AI 会话]
   Games --> MacApps[独立游戏进程]
-  Video --> TVApps[独立电视应用 / 可选 Web 容器]
+  Video --> ExternalApps
   Music --> MusicKit[MusicKit]
   Photos --> Sources[PhotoKit / 本地照片目录]
   Home --> HA[独立 Home Assistant 服务]
   AI --> Hermes[独立 Hermes 服务]
-  Clients[手机 / iPad / 安卓平板 PWA] -.后续版本.-> Gateway[Remote：认证、HTTP、WebSocket]
+  Clients[手机 / iPad / 安卓平板 PWA] -.后续版本.-> Gateway[Multi-device Remote：认证、HTTP、WebSocket]
   Gateway -.复用相同动作接口.-> Core
 ```
 
-图中的方框代表职责。首版 Core、Input、各自研功能模块与 Shell 在同一个进程；Remote 在多终端版本引入。外部服务和应用通过适配器连接。
+图中的方框代表职责。Core、应用内 Input、各自研功能模块与 Shell 在 mmTV 进程；mmTV Remote 是独立安装、独立启动、可脱离 mmTV 使用的全局遥控器服务。后续手机/平板使用的 `Remote` target 是网络控制网关，与 mmTV Remote 不是同一组件。外部服务和应用通过适配器连接。
 
 ### 推荐技术
 
@@ -53,7 +57,7 @@ flowchart TB
 | 电视界面 | SwiftUI | 卡片、海报、照片墙、播放器与状态展示 |
 | 系统宿主 | AppKit / NSWorkspace | 窗口、激活应用、进程监听、全屏与焦点恢复 |
 | 代码组织 | Xcode + Swift Package Manager | 一个仓库、明确 target 依赖、按模块测试 |
-| 输入 | NSEvent + GameController + IOHIDManager | 键盘与手柄走系统事件；小米 RC003 按 VID/PID 读取原始 HID，覆盖非标准返回键与全局 Home，不修改系统键位 |
+| 输入 | mmTV Remote + NSEvent + GameController | mmTV Remote 独占 RC003 原始 HID、去重、手势和按 App Profile；mmTV 只解释注入的标准按键、键盘与手柄，维护页面焦点 |
 | 音乐 | MusicKit | 授权、目录和资料库查询、应用内播放 |
 | 照片 | PhotoKit + ImageIO + AVFoundation | 系统图库访问、目录缩略图与视频播放 |
 | 配置和索引 | Codable JSON + SQLite | JSON 保存小配置；产生媒体索引时引入 SQLite，可用 GRDB |
@@ -66,15 +70,33 @@ flowchart TB
 
 ## 3. 模块边界
 
-### Shell / Input：统一电视体验
+### Shell / App Input：统一电视体验
 
-Shell 只负责入口、导航、焦点恢复、全局 Home、设置、AI 展示和模块状态。功能页面由各模块提供，音乐业务不写进主页，第三方应用按键不散落在全局导航里。
+Shell 只负责入口、导航、焦点恢复、设置、AI 展示和模块状态。功能页面由各模块提供，音乐业务不写进主页，第三方应用按键不散落在全局导航里。
 
-Input 将键盘、遥控器、手柄转换成方向、确认、返回、Home、媒体键及语音按下/松开事件。独立 FocusCoordinator 管理空间导航、焦点记忆、长按重复与返回栈。
+App Input 将标准键盘事件、手柄和未来明确版本的本机 IPC 转换成 mmTV 内部 `RemoteEvent`。它负责页面焦点、返回栈、弹窗优先级和文本输入例外，不枚举物理遥控器，也不保存第三方 App 的按键 Profile。
 
-当前实体遥控器基线为“小米蓝牙语音遥控器”RC003（VID `0x2717`、PID `0x32B8`、固件 `2671`）。Input 直接监听该设备的原始 HID usage，并与 macOS 产生的普通键盘事件去重；方向、确认、返回、Home、菜单、音量和语音触发进入统一 `RemoteEvent`。三横线菜单键实测为 Keyboard usage `0x65`，用于切换右上角“菜单与设置”。mmTV 内部所有主页、模块页、设置、弹窗和系统文件面板共享分层输入路由，返回键优先关闭最上层。音量键通过 CoreAudio 调整当前 macOS 输出；不支持软件音量的 HDMI 设备明确降级为电视/音响控制。语音键已识别物理触发，等 Hermes 阶段再接 ATVV 音频；电源键不被 mmTV 拦截，避免误触发休眠或关机。
+mmTV 内部所有主页、模块页、设置、弹窗和系统文件面板共享分层输入路由，返回键优先关闭最上层；三横线菜单最终表现为打开或关闭 mmTV 右上角菜单。这些是应用语义，不属于物理设备驱动。
 
-输入按照当前会话路由：在主页由 Shell 消费，在自研页面由当前页面消费，在外部应用中按该应用已验证的映射处理。游戏期间手柄交给游戏，Shell 避免重复消费。全局 Home 与独占全屏应用的行为必须实测，不能只依赖本应用内的键盘监听。
+输入按照当前会话路由：mmTV 前台时由 Shell 或当前自研页面消费；外部应用前台时由 mmTV Remote 选择对应 Profile。游戏期间手柄交给游戏，Shell 避免重复消费。全局启动/切回 mmTV、独占全屏应用和休眠唤醒由 mmTV Remote 实机验收。
+
+### mmTV Remote：物理遥控器与全局输入
+
+[mmTV Remote](https://github.com/Chiuvenz/mmTVRemote) 是独立 macOS 菜单栏应用，也是物理遥控器能力的唯一长期归属。它负责 RC003（VID `0x2717` / PID `0x32B8`）原始 HID、设备级映射、重复事件抑制、单击/长按/双击、前台 Bundle Identifier Profile、CoreAudio 音量、媒体动作、TV 键启动 mmTV、语音输入提供商、权限引导、登录启动和运行诊断。它可以在 MacBook 上单独使用，不要求 mmTV 正在运行。
+
+mmTV Remote 不拥有 mmTV 页面焦点、业务动作或播放状态；mmTV 也不读取其他 App 的 Profile。常规集成优先采用标准按键注入，只有普通快捷键无法表达且出现真实需求时，才增加版本化、可降级的本机 IPC。
+
+当前代码仍处于迁移兼容期：mmTV 保留早期的 RC003 直连实现，而 mmTV Remote 的内置 mmTV Profile 在 mmTV 前台时保持静默，从而避免双触发。目标状态是完成 mmTV Profile 的菜单/Home 等映射与实体回归后，关闭并最终删除 mmTV 内的 RC003 原始 HID、输入监控授权和系统音量重复实现。迁移期间同一物理事件始终只能有一个所有者。
+
+| 能力 | 唯一归属 |
+|---|---|
+| RC003 枚举、HID Report、按键去重与手势 | mmTV Remote |
+| 前台 App 识别、第三方 App Profile、按键注入 | mmTV Remote |
+| 系统音量、媒体动作、TV 键、登录启动、菜单栏诊断 | mmTV Remote |
+| Typeless / 系统听写提供商选择 | mmTV Remote |
+| mmTV 页面焦点、弹窗、返回栈、右上角菜单 | mmTV Shell / App Input |
+| 游戏、音乐、照片、HA、Hermes 等业务动作 | mmTV Core 与对应模块 |
+| 手机 / 平板配对、状态同步和网络动作 | mmTV 的多终端 Remote 网关 |
 
 ### Games：游戏模块
 
@@ -120,11 +142,11 @@ Home Assistant 独立部署，可运行在 Mac mini 的专用 VM 或现有其他
 
 Hermes 作为可替换的外部 Agent，通过本机带认证的 HTTP 接口访问。Assistant 模块拥有对话、任务进度、取消、错误恢复和界面；不让其类型或配置进入音乐、照片等模块。
 
-语音链路为：遥控器采音适配器 → STT → 意图处理 → 固定动作或 Hermes → 结果展示，可选 TTS。开发期可先用文字和 MacBook 麦克风验证，遥控器语音在 Mac mini 单独验收。Agent 可执行计划时须进入受控执行路径；仅把工具描述放进提示词不足以限制其系统权限。
+语音分两条链路：日常文字听写由 mmTV Remote 把语音键交给 Typeless、macOS 系统听写或关闭；Hermes 对话由 Assistant 获取已经转写的文本，或在以后明确支持遥控器音频协议时接入独立 STT。mmTV Remote 不承担意图理解，Assistant 也不直接接管全局 HID。Agent 可执行计划时须进入受控执行路径；仅把工具描述放进提示词不足以限制其系统权限。
 
 固定命令直接调用已注册动作；复杂搜索、规划交给 Hermes。模型返回文本不代表动作成功，界面以执行器结果和终态显示成功、失败或取消。UI 取消与远端任务真正停止分开验证。
 
-### Remote：多终端控制
+### Remote：多终端控制（不是 mmTV Remote）
 
 先做手机/平板网页控制端：配对、方向键、文字输入、Home、已接入播放会话控制、家居场景。后续增加照片浏览、选择在电视播放和资源访问。
 
@@ -142,7 +164,7 @@ Packages/mmTV/
   Sources/Contracts/           小型领域类型与接口
   Sources/Core/                动作路由、模块注册、会话协调
   Sources/DesignSystem/        TV 组件、尺寸、焦点样式
-  Sources/Input/               键盘、遥控器、手柄
+  Sources/Input/               mmTV 内键盘、手柄、焦点与事件路由
   Sources/Games/
   Sources/TVApps/
   Sources/Music/
@@ -195,7 +217,7 @@ MacBook 开发、Mac mini 安装运行完全可行。两台都是 Apple Silicon 
 1. MacBook 编译、模块测试、键盘/手柄导航检查，产出带版本号的 Release .app 和依赖清单。
 2. 核实签名能力；开发阶段使用合法开发签名与实际 entitlement 验证，个人机器可本机构建试运行。日常分发建议 Developer ID 签名、公证和 Hardened Runtime；不以关闭 Gatekeeper 或全局安全保护为安装步骤。
 3. 将应用安装到 Mac mini；通过首次设置选择媒体目录、游戏、服务地址，完成 MusicKit/照片/麦克风及确实需要的辅助功能等授权。授权和账户不会从 MacBook 自动迁移。
-4. 单独安装和配置遥控器组件、Hermes、Home Assistant 与第三方应用，逐项健康检查。账户、令牌和 Keychain 项不写进仓库或发行包。
+4. 安装 `/Applications/mmTV Remote.app`，固定签名后分别授予输入监控与辅助功能权限，开启登录启动并安装/校准所需 App Profile；再配置 Hermes、Home Assistant 与第三方应用。账户、令牌和 Keychain 项不写进仓库或发行包。
 5. 验证 TV 模式、HDMI 画面和声音、遥控器、全屏应用返回、休眠/唤醒、外盘掉线和网络故障；通过后设为日常入口。
 6. 保留上一版本与配置备份；升级前备份数据库。数据库迁移后回滚应恢复匹配的备份，不能只替换旧 .app。
 
@@ -211,7 +233,7 @@ MacBook 开发、Mac mini 安装运行完全可行。两台都是 Apple Silicon 
 
 ## 7. 多终端与常驻进程的演进条件
 
-V0.1—V0.5 主要运行单元：mmTV.app、独立 HA、按需 Hermes、使用中的游戏/视频应用与遥控器组件。
+V0.1—V0.5 主要运行单元：mmTV.app、mmTV Remote.app、独立 HA、按需 Hermes，以及使用中的游戏/视频应用。
 
 V0.6 增加应用内 Remote 网关与 PWA，控制服务跟随 App。若后续要求 UI 退出后继续浏览本地照片目录或使用家庭 API，再增加 HomeHub 用户 LaunchAgent；资源索引和控制网关迁出，图形操作留在用户会话 App，双方用明确 IPC 连接。每种能力只由一个进程持有，避免双播放器、双扫描与多数据库写者。
 
@@ -226,7 +248,7 @@ V0.6 增加应用内 Remote 网关与 PWA，控制服务跟随 App。若后续�
 | Mac mini 系统、架构与签名 | 实机记录系统版本，安装最小签名 App | 最低系统版本、打包方式 |
 | Apple Music | 目标发行配置下授权、查询并播放一首可用歌曲 | Music 实现与账户配置 |
 | 照片来源 | 授权读取系统图库；选择实际本地同步目录 | PhotoKitSource / FolderSource 启用顺序 |
-| 遥控器与语音 | 核对型号，测试按键、长按、音频与全局 Home | Input 适配器 |
+| 遥控器与语音 | 安装 mmTV Remote，测试按键、长按、Profile、Typeless/系统听写与全局 Home | mmTV Remote Profile；Hermes 语义仍属 Assistant |
 | Hermes | 所用版本认证、流式响应、任务取消与工具执行 | Assistant 适配器；不影响游戏等模块 |
 | 视频候选 | 登录、播放、方向导航、返回、声音 | 每应用能力清单 |
 | HA | 可达、令牌有效、动作与状态订阅 | Home 配置 |

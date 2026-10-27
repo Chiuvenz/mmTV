@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import Contracts
 import DesignSystem
+import MacHost
 import Music
 import PhotoGallery
 import Home
@@ -33,11 +34,16 @@ struct RootView: View {
             .onAppear { model.columns = columns }
             .onChange(of: columns) { _, value in model.columns = value }
         }
-        .sheet(isPresented: $model.isEditing) {
-            if let entry = model.editor { EntryEditor(entry: entry, onSave: model.upsert) }
+        .sheet(item: $model.presentation) { presentation in
+            switch presentation {
+            case .settings:
+                SettingsView(model: model)
+            case .setup:
+                setupSheet
+            case .editor(let entry):
+                EntryEditor(entry: entry, onSave: model.upsert)
+            }
         }
-        .sheet(isPresented: $model.showingSettings) { SettingsView(model: model) }
-        .sheet(isPresented: $model.showingSetup) { setupSheet }
         .alert("提示", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("知道了", role: .cancel) { model.message = nil }
         } message: { Text(model.message ?? "") }
@@ -100,7 +106,7 @@ struct RootView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         HStack {
                             Image(systemName: module.symbol).font(.system(size: 29, weight: .light))
-                                .foregroundStyle(color(for: module.id)).frame(height: 37)
+                                .foregroundStyle(TVTheme.accent(for: module.id)).frame(height: 37)
                             Spacer()
                             StatusPill(module.status.title, ready: module.status == .ready)
                         }
@@ -143,7 +149,10 @@ struct RootView: View {
                 TVCard(selected: model.focus.index == index, action: { model.focus.select(index, count: model.itemCount); model.launch(entry) }) {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
-                            AppIcon(path: entry.location, symbol: module.symbol)
+                            AppIcon(
+                                path: model.resolvedLocation(entry) ?? entry.location,
+                                symbol: module.symbol
+                            )
                             Spacer()
                             if model.session.launching == entry.id { ProgressView().controlSize(.small) }
                             else if model.session.running[entry.id] != nil { StatusPill("运行中", ready: true) }
@@ -205,7 +214,7 @@ struct RootView: View {
     private func upcomingModule(_ module: ModuleDescriptor) -> some View {
         TVCard(selected: true, action: model.openSetup) {
             HStack(alignment: .top, spacing: 24) {
-                Image(systemName: module.symbol).font(.system(size: 40, weight: .ultraLight)).foregroundStyle(color(for: module.id)).frame(width: 60)
+                Image(systemName: module.symbol).font(.system(size: 40, weight: .ultraLight)).foregroundStyle(TVTheme.accent(for: module.id)).frame(width: 60)
                 VStack(alignment: .leading, spacing: 12) {
                     Text("为下一段体验做好准备").font(.system(size: 24, weight: .medium))
                     Text(setupDescription(module.id)).font(.system(size: 15)).foregroundStyle(TVTheme.muted).lineSpacing(7)
@@ -232,7 +241,7 @@ struct RootView: View {
             HStack {
                 Spacer()
                 let canProbe = model.session.route == .photos || (model.session.route == .music && MusicModule.accountConnectionEnabled)
-                Button("完成") { model.showingSetup = false }
+                Button("完成") { model.dismissPresentation() }
                     .keyboardShortcut(.cancelAction)
                     .remoteSelected(!canProbe || model.setupFocus == 1)
             }
@@ -255,15 +264,6 @@ struct RootView: View {
     private func errorBanner(_ text: String) -> some View {
         Text(text).font(.callout).foregroundStyle(TVTheme.amber).padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(TVTheme.amber.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-    }
-    private func color(for id: ModuleID) -> Color {
-        switch id {
-        case .games: TVTheme.amber
-        case .video: Color(red: 0.55, green: 0.73, blue: 0.92)
-        case .music: Color(red: 0.92, green: 0.57, blue: 0.60)
-        case .photos: Color(red: 0.76, green: 0.67, blue: 0.92)
-        default: TVTheme.mint
-        }
     }
     private func setupDescription(_ id: ModuleID) -> String {
         switch id {
@@ -289,19 +289,27 @@ private struct VolumeHUD: View {
         .shadow(radius: 18)
     }
 }
-private extension View {
-    func remoteSelected(_ selected: Bool) -> some View {
-        self.padding(5)
-            .background(selected ? TVTheme.mint.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? TVTheme.mint : .clear, lineWidth: 2))
-    }
-}
 private struct AppIcon: View {
     let path: String
     let symbol: String
+    @State private var image: NSImage?
+
     var body: some View {
-        if FileManager.default.fileExists(atPath: path) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: path)).resizable().frame(width: 48, height: 48)
-        } else { Image(systemName: symbol).font(.system(size: 33)).frame(width: 48, height: 48).foregroundStyle(TVTheme.muted) }
+        Group {
+            if let image {
+                Image(nsImage: image).resizable()
+            } else {
+                Image(systemName: symbol)
+                    .font(.system(size: 33))
+                    .foregroundStyle(TVTheme.muted)
+            }
+        }
+        .frame(width: 48, height: 48)
+        .task(id: path) {
+            image = nil
+            guard let data = await ApplicationIconLoader.shared.iconData(for: path),
+                  !Task.isCancelled else { return }
+            image = NSImage(data: data)
+        }
     }
 }

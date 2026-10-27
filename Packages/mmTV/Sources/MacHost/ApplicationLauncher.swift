@@ -3,7 +3,7 @@ import Contracts
 import OSLog
 
 @MainActor public final class MacApplicationLauncher: ApplicationLaunching {
-    public var onProcessExit: ((Int32) -> Void)?
+    public var onProcessExit: (@MainActor @Sendable (Int32) -> Void)?
     public init() {}
     private var processes: [Int32: Process] = [:]
     public func launch(_ entry: AppEntry) async throws -> ApplicationHandle {

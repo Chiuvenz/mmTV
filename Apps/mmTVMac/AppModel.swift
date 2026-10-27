@@ -25,22 +25,20 @@ enum SettingsRemoteTarget: Hashable {
 @MainActor @Observable final class AppModel {
     let isPreview: Bool
     let version = "0.2.0-dev"
-    var configuration = AppConfiguration()
     let session: SessionCoordinator
     let input = NativeInput()
     var focus = GridFocus()
     var homeFocus = 0
-    var editor: AppEntry?
-    var isEditing = false
-    var showingSettings = false
-    var showingSetup = false
+    var presentation: AppPresentation?
     var message: String?
-    var loadError: String?
     var probeResult: String?
     var loadingProbe = false
-    let store: ConfigurationStore
+    let configurationController: AppConfigurationController
     private var observers: [NSObjectProtocol] = []
     private let launcher: MacApplicationLauncher
+    private let availabilityService = EntryAvailabilityService()
+    private var availabilityTask: Task<Void, Never>?
+    private var entryAvailability: [UUID: EntryAvailabilitySnapshot] = [:]
     private var navigationGeneration = 0
     let isolatedModule: ModuleID?
     var columns = 3
@@ -52,28 +50,29 @@ enum SettingsRemoteTarget: Hashable {
     var showingVolumeHUD = false
     private var volumeHUDTask: Task<Void, Never>?
 
+    var configuration: AppConfiguration { configurationController.configuration }
+    var loadError: String? { configurationController.loadError }
+    var store: ConfigurationStore { configurationController.store }
+    var isEditing: Bool {
+        if case .editor = presentation { return true }
+        return false
+    }
+    var showingSettings: Bool { presentation == .settings }
+    var showingSetup: Bool { presentation == .setup }
+
     init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         isPreview = arguments.contains("--preview-only")
+        let selectedStore: ConfigurationStore
         if let flag = arguments.firstIndex(of: "--config"), arguments.indices.contains(flag + 1) {
-            store = .init(url: URL(fileURLWithPath: arguments[flag + 1]))
-        } else { store = .standard }
+            selectedStore = .init(url: URL(fileURLWithPath: arguments[flag + 1]))
+        } else { selectedStore = .standard }
+        configurationController = AppConfigurationController(store: selectedStore)
         if let flag = arguments.firstIndex(of: "--module"), arguments.indices.contains(flag + 1) {
             isolatedModule = ModuleID(rawValue: arguments[flag + 1])
         } else { isolatedModule = nil }
         launcher = MacApplicationLauncher()
         session = SessionCoordinator(launcher: launcher)
-        do {
-            var loaded = try store.load()
-            var enriched = false
-            for index in loaded.entries.indices where loaded.entries[index].kind == .application && loaded.entries[index].applicationBundleID == nil {
-                if let bundleID = ApplicationLocationResolver.bundleIdentifier(at: loaded.entries[index].location) {
-                    loaded.entries[index].applicationBundleID = bundleID
-                    enriched = true
-                }
-            }
-            configuration = loaded
-            if enriched { try? store.save(loaded) }
-        } catch { loadError = error.localizedDescription }
+        refreshEntryAvailability()
         if isPreview { return }
         launcher.onProcessExit = { [weak self] pid in self?.processExited(pid) }
         input.onEvent = { [weak self] event in self?.handle(event) }
@@ -98,10 +97,19 @@ enum SettingsRemoteTarget: Hashable {
             let pid = app.processIdentifier
             Task { @MainActor in self?.processExited(pid) }
         })
+        for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await ApplicationIconLoader.shared.invalidate()
+                    self?.refreshEntryAvailability()
+                }
+            })
+        }
         if let isolatedModule { open(isolatedModule) }
     }
     var modules: [ModuleDescriptor] {
-        let all = [GamesModule.descriptor(count: entries(.games).filter { FileManager.default.fileExists(atPath: $0.location) }.count), TVAppsModule.descriptor(count: entries(.video).filter { FileManager.default.fileExists(atPath: $0.location) }.count),
+        let launchableIDs = Set(entryAvailability.values.filter(\.health.isLaunchable).map(\.entryID))
+        let all = [GamesModule.descriptor(count: entries(.games).filter { launchableIDs.contains($0.id) }.count), TVAppsModule.descriptor(count: entries(.video).filter { launchableIDs.contains($0.id) }.count),
                    MusicModule.descriptor, PhotosModule.descriptor, HomeModule.descriptor, AssistantModule.descriptor, RemoteModule.descriptor]
         return all.map { module in
             if configuration.disabledModules.contains(module.id) {
@@ -118,11 +126,10 @@ enum SettingsRemoteTarget: Hashable {
     var currentEntries: [AppEntry] { session.route.map(entries) ?? [] }
     var runningEntries: [AppEntry] { configuration.entries.filter { session.running[$0.id] != nil } }
     func resolvedLocation(_ entry: AppEntry) -> String? {
-        ApplicationLocationResolver.resolvedLocation(for: entry)
+        entryAvailability[entry.id]?.resolvedLocation
     }
     func health(_ entry: AppEntry) -> EntryHealth {
-        let relocated = resolvedLocation(entry).flatMap { $0 == entry.location ? nil : $0 }
-        return EntryHealthChecker.check(entry, relocatedPath: relocated)
+        entryAvailability[entry.id]?.health ?? .checking
     }
     @discardableResult func repairLocationIfNeeded(_ entry: AppEntry) -> AppEntry {
         guard let location = resolvedLocation(entry), location != entry.location else { return entry }
@@ -139,30 +146,24 @@ enum SettingsRemoteTarget: Hashable {
         }
     }
     func save(_ updated: AppConfiguration) throws {
-        guard loadError == nil else { throw LaunchError.invalid("当前配置读取失败，为保护原文件已停止写入。请修复或重新导入配置。") }
-        try store.save(updated)
-        configuration = updated
+        try configurationController.save(updated)
+        refreshEntryAvailability()
     }
     func upsert(_ entry: AppEntry) throws {
-        try EntryValidation.validate(entry)
-        var updated = configuration
-        if let index = updated.entries.firstIndex(where: { $0.id == entry.id }) { updated.entries[index] = entry }
-        else { updated.entries.append(entry) }
-        try save(updated)
+        try configurationController.upsert(entry)
+        refreshEntryAvailability()
     }
     func remove(_ entry: AppEntry) {
         do {
-            var updated = configuration; updated.entries.removeAll { $0.id == entry.id }
-            try save(updated)
+            try configurationController.remove(entry)
+            refreshEntryAvailability()
             focus.select(focus.index, count: itemCount)
             message = "已移除入口，应用和资源仍保留在电脑上。"
         } catch { message = error.localizedDescription }
     }
     func setEnabled(_ module: ModuleID, _ enabled: Bool) {
         do {
-            var updated = configuration
-            if enabled { updated.disabledModules.remove(module) } else { updated.disabledModules.insert(module) }
-            try save(updated)
+            try configurationController.setEnabled(module, enabled)
             focus.select(focus.index, count: itemCount)
         } catch { message = error.localizedDescription }
     }
@@ -174,9 +175,7 @@ enum SettingsRemoteTarget: Hashable {
     }
     func returnHome() {
         navigationGeneration += 1
-        showingSettings = false
-        showingSetup = false
-        isEditing = false
+        presentation = nil
         message = nil
         Task { await session.dispatch(.showHome, entries: configuration.entries) }
         focus = GridFocus(index: homeFocus)
@@ -186,11 +185,11 @@ enum SettingsRemoteTarget: Hashable {
     func openSettings() {
         settingsFocus = 0
         systemVolume = SystemVolumeController.currentVolume()
-        showingSettings = true
+        presentation = .settings
     }
     func openSetup() {
         setupFocus = 0
-        showingSetup = true
+        presentation = .setup
     }
     func launch(_ entry: AppEntry) {
         let entry = repairLocationIfNeeded(entry)
@@ -203,10 +202,10 @@ enum SettingsRemoteTarget: Hashable {
     }
     func addEntry() {
         guard let module = session.route, [.games, .video].contains(module) else { return }
-        editor = AppEntry(title: "", module: module, location: "")
-        isEditing = true
+        presentation = .editor(AppEntry(title: "", module: module, location: ""))
     }
-    func edit(_ entry: AppEntry) { editor = entry; isEditing = true }
+    func edit(_ entry: AppEntry) { presentation = .editor(entry) }
+    func dismissPresentation() { presentation = nil }
     func candidateLocation(_ candidate: TVAppCandidate) -> String? {
         guard let bundleID = candidate.macBundleID else { return nil }
         return NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path
@@ -245,10 +244,9 @@ enum SettingsRemoteTarget: Hashable {
             return
         case .menu:
             guard !isEditing else { return }
-            if showingSettings { showingSettings = false }
+            if showingSettings { presentation = nil }
             else {
                 message = nil
-                showingSetup = false
                 openSettings()
             }
             return
@@ -262,7 +260,7 @@ enum SettingsRemoteTarget: Hashable {
         if showingSettings { handleSettings(event); return }
         if showingSetup { handleSetup(event); return }
         if isEditing {
-            if event == .back { isEditing = false }
+            if event == .back { presentation = nil }
             else if event == .home { returnHome() }
             else { forwardToNativeFocus(event) }
             return
@@ -327,7 +325,7 @@ enum SettingsRemoteTarget: Hashable {
 
     private func handleSettings(_ event: RemoteEvent) {
         switch event {
-        case .back: showingSettings = false
+        case .back: presentation = nil
         case .home: returnHome()
         case .select:
             guard let target = focusedSettingsTarget else { return }
@@ -341,14 +339,13 @@ enum SettingsRemoteTarget: Hashable {
     }
     private func activateSettings(_ target: SettingsRemoteTarget) {
         switch target {
-        case .done: showingSettings = false
+        case .done: presentation = nil
         case .module(let id): setEnabled(id, configuration.disabledModules.contains(id))
         case .entry(let id):
             guard let entry = configuration.entries.first(where: { $0.id == id }) else { return }
-            showingSettings = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.edit(entry) }
+            edit(entry)
         case .tvMode:
-            do { var config = configuration; config.tvMode.toggle(); try save(config) }
+            do { var config = configuration; config.launchInFullScreen.toggle(); try save(config) }
             catch { message = error.localizedDescription }
         case .volumeDown: adjustVolume(by: -SystemVolumeController.step)
         case .volumeUp: adjustVolume(by: SystemVolumeController.step)
@@ -363,11 +360,11 @@ enum SettingsRemoteTarget: Hashable {
         let hasProbe = (session.route == .photos) || (session.route == .music && MusicModule.accountConnectionEnabled)
         let count = hasProbe ? 2 : 1
         switch event {
-        case .back: showingSetup = false
+        case .back: presentation = nil
         case .home: returnHome()
         case .select:
             if hasProbe && setupFocus == 0 { performProbe() }
-            else { showingSetup = false }
+            else { presentation = nil }
         case .up, .left: setupFocus = max(0, setupFocus - 1)
         case .down, .right: setupFocus = min(count - 1, setupFocus + 1)
         case .menu, .volumeUp, .volumeDown, .voice: break
@@ -408,7 +405,7 @@ enum SettingsRemoteTarget: Hashable {
                 probeResult = await MusicModule.requestAuthorization()
             } else if session.route == .photos {
                 let result = await PhotosModule.requestAuthorization()
-                let count = PhotosModule.assetCountIfAuthorized()
+                let count = await PhotosModule.assetCountIfAuthorized()
                 probeResult = result + (count.map { " 图库共 \($0) 个资源。" } ?? "")
             }
         }
@@ -440,9 +437,8 @@ enum SettingsRemoteTarget: Hashable {
             alert.informativeText = "将替换当前配置；原配置保留为 .previous 备份。"
             alert.addButton(withTitle: "导入"); alert.addButton(withTitle: "取消")
             guard alert.runModal() == .alertFirstButtonReturn else { return }
-            // Explicit import is also the recovery path for an unreadable configuration.
-            try store.save(loaded)
-            loadError = nil; configuration = loaded
+            try configurationController.replaceWithImportedConfiguration(loaded)
+            refreshEntryAvailability()
             message = "配置已导入，请检查本机路径。"
         } catch { message = error.localizedDescription }
     }
@@ -482,5 +478,16 @@ enum SettingsRemoteTarget: Hashable {
             try report.write(to: url, atomically: true, encoding: .utf8)
             message = "诊断报告已导出。报告包含本机应用路径，不包含账号口令。"
         } catch { message = error.localizedDescription }
+    }
+
+    private func refreshEntryAvailability() {
+        let entries = configuration.entries
+        let service = availabilityService
+        availabilityTask?.cancel()
+        availabilityTask = Task { [weak self] in
+            let snapshots = await service.inspect(entries)
+            guard !Task.isCancelled else { return }
+            self?.entryAvailability = snapshots
+        }
     }
 }
