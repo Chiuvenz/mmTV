@@ -6,4 +6,5 @@ import TVApps
     let candidate = TVAppsModule.candidates.first { $0.id == "bilibili" }
     #expect(candidate?.macBundleID == "com.mmtv.bilitv")
     #expect(candidate?.launchArguments == ["--tv-fullscreen"])
+    #expect(candidate?.download.absoluteString == "https://github.com/Chiuvenz/mmTVAdapters")
 }
