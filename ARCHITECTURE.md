@@ -108,13 +108,13 @@ mmTV Remote 不拥有 mmTV 页面焦点、业务动作或播放状态；mmTV 也
 
 ### TVApps：第三方视频应用
 
-每款应用一个小适配器，配置应用标识、启动方式、全屏策略、按键映射，以及实际支持的播放控制、深链接和状态读取能力。
+mmTV 内的 TVApps 是**启动器契约**：检测 Bundle ID、按参数启动独立 App、记录能力边界；不把第三方 UI 嵌进 mmTV。需要独立运行时（如 Electron）的适配器源码在 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)。通用按键由 mmTV Remote 按前台 Bundle ID Profile 处理。
 
-首个闭环只需一款 YouTube TV 交互客户端和一款 B 站客户端，具体选型以真实登录、播放、遥控和返回实验为准。后续按需求加入 Plex、Infuse、网易爆米花、优酷、爱奇艺、WeTV、Netflix、Spotify、KKBOX；Apple Music 与照片由独立自研模块承担。应用清单保留，所有应用同时兼容不作为 V0.1 的前置条件。
+首个闭环只需一款 YouTube TV 交互客户端和一款 B 站客户端；BiliTVMac（`com.mmtv.bilitv`，`--tv-fullscreen`）已走适配器仓。后续按需求加入 Plex、Infuse、网易爆米花、优酷、爱奇艺、WeTV、Netflix、Spotify、KKBOX；Apple Music 与照片由独立自研模块承担。应用清单保留，所有应用同时兼容不作为 V0.1 的前置条件。
 
-优先运行独立成熟 TV 客户端；需要移植电视 Web 应用时，先为一个应用做容器与少量平台适配，第二款应用证明可复用后再抽取公共 TV Web Runtime。WebKit 与 Chromium 的播放器、DRM、登录兼容性分别验证，不预设一个 WebView 能覆盖全部平台。
+优先运行独立成熟 TV 客户端；需要移植电视 Web 应用时，先为一个应用做容器与少量平台适配（放在适配器仓），第二款证明可复用后再抽取公共 TV Web Runtime。WebKit 与 Chromium 的播放器、DRM、登录兼容性分别验证，不预设一个 WebView 能覆盖全部平台。
 
-TVCompat 和 Android TV 兼容实验置于独立实验目录与进程中。只有通过真实应用验收后，才以一种新的启动适配器接入 TVApps。研发失败或暂停不阻塞主系统发布。源码移植、模拟器运行、原始二进制兼容分别记录，不能混为同一成果。
+TVCompat 和 Android TV 兼容实验置于独立实验目录与进程中。只有通过真实应用验收后，才以新的启动契约接入 TVApps。研发失败或暂停不阻塞主系统发布。源码移植、模拟器运行、原始二进制兼容分别记录，不能混为同一成果。
 
 ### Music：Apple Music 电视应用
 

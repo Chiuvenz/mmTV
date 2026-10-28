@@ -1,6 +1,8 @@
 # 实现与验收记录
 
-日期：2026-10-27。当前为开发预览构建，版本号 0.2.0-dev；版本号不代表 ROADMAP.md 中的产品验收门槛已经全部通过。
+日期：2026-10-28。当前为开发预览构建，版本号 0.2.0-dev；版本号不代表 ROADMAP.md 中的产品验收门槛已经全部通过。
+
+Mac mini 已从 `main`（适配器拆分后）重建并安装 ad-hoc `mmTV.app`；本机钥匙串暂无 Apple Development 身份，故 mmTV Remote **未**在本轮重建（仍用既有 Development 签名的 0.3.1）。HDMI 保持 1920×1080。电视画面／账号／实体遥控仍待人工（见仓库外 next-steps／feature-roadmap）。
 
 ## 当前自主开发边界
 
