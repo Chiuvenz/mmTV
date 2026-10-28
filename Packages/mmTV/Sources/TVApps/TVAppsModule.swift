@@ -27,17 +27,34 @@ public struct TVAppCandidate: Identifiable, Sendable {
 }
 
 public enum TVAppsModule {
-    public static func descriptor(count: Int) -> ModuleDescriptor {
-        .init(.video, title: "看点什么", subtitle: "电视应用 · 电影 · 视频", symbol: "play.rectangle", status: count > 0 ? .ready : .needsSetup)
+    public static func descriptor(count: Int, mediaLibrary: MediaLibraryConfiguration? = nil) -> ModuleDescriptor {
+        let ready = count > 0 || mediaLibrary?.libraryURL != nil
+        let subtitle: String
+        if mediaLibrary != nil {
+            subtitle = "Jellyfin 媒体库 · 电视应用"
+        } else {
+            subtitle = "电视应用 · 电影 · 视频"
+        }
+        return .init(.video, title: "看点什么", subtitle: subtitle, symbol: "play.rectangle",
+                     status: ready ? .ready : .needsSetup)
     }
 
-    /// Prefer external player apps over embedding. Bili remains the adapters path; IINA/QuickTime are the fast local demo.
+    /// Prefer a hosted open-source library (Jellyfin) over crude open-file players.
+    /// IINA/QuickTime remain fallbacks; Bili stays on the adapters path.
     public static let candidates: [TVAppCandidate] = [
-        .init(id: "iina", title: "IINA · 本机影片", detail: "已安装则一键接入；用外部播放器打开本地视频，适合今晚客厅演示。",
+        .init(id: "jellyfin", title: "Jellyfin Server", detail: "开源媒体库服务端；扫描外置盘 Movies/TV，再在壳内打开 Web UI。本机未装时先 brew install --cask jellyfin。",
+              source: "https://jellyfin.org",
+              macBundleID: "org.jellyfin.server",
+              download: "https://jellyfin.org/downloads/"),
+        .init(id: "jellyfin-mp", title: "Jellyfin Media Player", detail: "可选桌面客户端；未装时可直接用壳内 Jellyfin Web（http://127.0.0.1:8096）。",
+              source: "https://github.com/jellyfin/jellyfin-media-player",
+              macBundleID: "org.jellyfin.JellyfinMediaPlayer",
+              download: "https://github.com/jellyfin/jellyfin-media-player/releases"),
+        .init(id: "iina", title: "IINA · 单文件兜底", detail: "无媒体库时的本机播放器兜底；客厅优先 Jellyfin 库体验。",
               source: "https://iina.io",
               macBundleID: "com.colliderli.iina",
               download: "https://iina.io"),
-        .init(id: "quicktime", title: "QuickTime Player", detail: "系统自带播放器；无 IINA 时的兜底本机播放入口。",
+        .init(id: "quicktime", title: "QuickTime Player", detail: "系统自带播放器；无 IINA / Jellyfin 时的兜底。",
               source: "https://support.apple.com/guide/quicktime-player/welcome/mac",
               macBundleID: "com.apple.QuickTimePlayerX",
               download: "https://support.apple.com/guide/quicktime-player/welcome/mac"),
@@ -55,4 +72,11 @@ public enum TVAppsModule {
     public static func entries(in configuration: AppConfiguration) -> [AppEntry] {
         configuration.entries.filter { $0.module == .video }
     }
+
+    public static func resolvedMediaLibrary(in app: AppConfiguration) -> MediaLibraryConfiguration? {
+        app.mediaLibrary
+    }
+
+    /// Real library folders created on this Mac mini’s mounted volume (do not invent alternate roots).
+    public static let inspectedLibraryRoots = MediaLibraryConfiguration.defaultLibraryRoots
 }

@@ -20,7 +20,10 @@ import Home
     #expect(HomeModule.descriptor(for: mock).status == .ready)
     var live = HomeAssistantConfiguration(token: "real-token-value", useMock: false)
     #expect(HomeModule.descriptor(for: live).status == .ready)
+    // Empty token still allows Lovelace (HA’s own login); only wipe URL → needsSetup.
     live.token = ""
+    #expect(HomeModule.descriptor(for: live).status == .ready)
+    live.baseURL = ""
     #expect(HomeModule.descriptor(for: live).status == .needsSetup)
 }
 
@@ -80,4 +83,38 @@ import Home
     let loaded = try ConfigurationStore(url: url).load()
     #expect(loaded.homeAssistant == nil)
     #expect(HomeModule.resolvedConfiguration(in: loaded).useMock)
+}
+
+@Test func homeAssistantDecodesLegacyJSONWithoutUIMode() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let url = folder.appendingPathComponent("config.json")
+    let json = """
+    {"schemaVersion":1,"entries":[],"disabledModules":[],"tvMode":false,"homeAssistant":{"baseURL":"http://ha.local:8123","token":"x","useMock":false,"controls":[]}}
+    """
+    try Data(json.utf8).write(to: url)
+    let loaded = try ConfigurationStore(url: url).load()
+    #expect(loaded.homeAssistant?.uiMode == .lovelace)
+    #expect(loaded.homeAssistant?.dashboardPath == "/")
+    #expect(loaded.homeAssistant?.dashboardURL?.absoluteString == "http://ha.local:8123/")
+    #expect(loaded.homeAssistant?.prefersLovelaceUI == true)
+}
+
+@Test func mediaLibraryRoundTrip() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let store = ConfigurationStore(url: folder.appendingPathComponent("config.json"))
+    var config = AppConfiguration()
+    config.mediaLibrary = MediaLibraryConfiguration(
+        provider: .jellyfin,
+        baseURL: "http://127.0.0.1:8096",
+        libraryRoots: ["/Volumes/mmTV Media/Media/Movies"],
+        embedInShell: true
+    )
+    try store.save(config)
+    let loaded = try store.load()
+    #expect(loaded.mediaLibrary?.provider == .jellyfin)
+    #expect(loaded.mediaLibrary?.libraryRoots.first == "/Volumes/mmTV Media/Media/Movies")
+    #expect(loaded.mediaLibrary?.embedInShell == true)
 }

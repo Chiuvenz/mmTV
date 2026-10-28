@@ -123,7 +123,15 @@ public struct HomeControlState: Identifiable, Equatable, Sendable {
     }
 }
 
-/// Minimal Home Assistant REST client settings. Token lives only in Application Support
+/// How the Home module presents Home Assistant on the TV shell.
+/// - `controls`: remotes-friendly light/scene grid (REST or mock).
+/// - `lovelace`: open HA’s own Lovelace frontend (preferred live UI; optional WallPanel on HA).
+public enum HomeUIMode: String, Codable, Sendable {
+    case controls
+    case lovelace
+}
+
+/// Minimal Home Assistant settings. Token lives only in Application Support
 /// configuration (never ship tokens in the repo or release zip).
 public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
     public var baseURL: String
@@ -131,14 +139,22 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
     /// When true, Home uses in-app mock lights/scenes — no network required.
     public var useMock: Bool
     public var controls: [HomeControl]
+    /// Preferred UI when HA URL is reachable. Mock always falls back to `controls`.
+    public var uiMode: HomeUIMode
+    /// Path appended to `baseURL` for Lovelace / WallPanel dashboards (e.g. `/lovelace/tv` or `/`).
+    public var dashboardPath: String
     public init(baseURL: String = "http://homeassistant.local:8123",
                 token: String = "",
                 useMock: Bool = true,
-                controls: [HomeControl] = HomeControl.demoDefaults) {
+                controls: [HomeControl] = HomeControl.demoDefaults,
+                uiMode: HomeUIMode = .lovelace,
+                dashboardPath: String = "/") {
         self.baseURL = baseURL
         self.token = token
         self.useMock = useMock
         self.controls = controls
+        self.uiMode = uiMode
+        self.dashboardPath = dashboardPath
     }
     public var trimmedToken: String {
         token.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -153,6 +169,75 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
     public var canUseLiveAPI: Bool {
         !useMock && !looksLikePlaceholderToken && URL(string: baseURL) != nil
     }
+    /// Resolved dashboard URL for WKWebView / browser launch (open-source HA frontend).
+    public var dashboardURL: URL? {
+        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              var components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              let host = components.host, !host.isEmpty else { return nil }
+        let raw = dashboardPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let path = raw.isEmpty ? "/" : (raw.hasPrefix("/") ? raw : "/" + raw)
+        components.path = path
+        components.query = nil
+        components.fragment = nil
+        return components.url
+    }
+    public var prefersLovelaceUI: Bool {
+        uiMode == .lovelace && dashboardURL != nil && !useMock
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case baseURL, token, useMock, controls, uiMode, dashboardPath
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        baseURL = try container.decodeIfPresent(String.self, forKey: .baseURL) ?? "http://homeassistant.local:8123"
+        token = try container.decodeIfPresent(String.self, forKey: .token) ?? ""
+        useMock = try container.decodeIfPresent(Bool.self, forKey: .useMock) ?? true
+        controls = try container.decodeIfPresent([HomeControl].self, forKey: .controls) ?? HomeControl.demoDefaults
+        uiMode = try container.decodeIfPresent(HomeUIMode.self, forKey: .uiMode) ?? .lovelace
+        dashboardPath = try container.decodeIfPresent(String.self, forKey: .dashboardPath) ?? "/"
+    }
+}
+
+/// Open-source media library (Jellyfin preferred). Server is hosted by the user on this Mac mini.
+public enum MediaLibraryProvider: String, Codable, Sendable {
+    case jellyfin
+    case emby
+}
+
+public struct MediaLibraryConfiguration: Codable, Equatable, Sendable {
+    public var provider: MediaLibraryProvider
+    public var baseURL: String
+    /// Absolute paths the user should add as Jellyfin/Emby libraries (informational + seed).
+    public var libraryRoots: [String]
+    /// When true, mmTV opens the library Web UI inside the shell (WKWebView); otherwise `/usr/bin/open`.
+    public var embedInShell: Bool
+    public init(provider: MediaLibraryProvider = .jellyfin,
+                baseURL: String = "http://127.0.0.1:8096",
+                libraryRoots: [String] = MediaLibraryConfiguration.defaultLibraryRoots,
+                embedInShell: Bool = true) {
+        self.provider = provider
+        self.baseURL = baseURL
+        self.libraryRoots = libraryRoots
+        self.embedInShell = embedInShell
+    }
+    public static let defaultLibraryRoots: [String] = [
+        "/Volumes/mmTV Media/Media/Movies",
+        "/Volumes/mmTV Media/Media/TV"
+    ]
+    public var libraryURL: URL? {
+        URL(string: baseURL.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    public var displayTitle: String {
+        switch provider {
+        case .jellyfin: "Jellyfin 媒体库"
+        case .emby: "Emby 媒体库"
+        }
+    }
 }
 
 public struct AppConfiguration: Codable, Equatable, Sendable {
@@ -162,6 +247,8 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var tvMode: Bool = false
     /// Optional HA block. Absent in older configs → Home stays on mock/setup path.
     public var homeAssistant: HomeAssistantConfiguration?
+    /// Optional Jellyfin/Emby library. Absent → video module keeps app-launcher cards only.
+    public var mediaLibrary: MediaLibraryConfiguration?
     /// Source-compatible product name; Codable continues to persist `tvMode`
     /// so existing configuration files remain valid.
     public var launchInFullScreen: Bool {
