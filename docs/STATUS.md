@@ -43,7 +43,8 @@ Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --ver
 | Bilibili | MacBook 与 Mac mini 均完成匿名浏览和静音播放烟测；二维码登录、账号持久化、可听音频、电视画面与实体遥控器待验收 |
 | Apple Music | 预览包尚未配置 MusicKit 开发者签名，账户连接默认禁用；真实授权和播放未验收 |
 | 系统照片图库 | 手动权限接口已编译；未擅自请求权限或读取用户图库 |
-| HA / Hermes / 多终端 Remote | 模块与说明入口已建立；服务连接与手机/平板网络网关尚未实现。这里的 Remote 不指已经完成的 mmTV Remote |
+| HA / Hermes / 多终端 Remote | **HA 演示切片**：REST + mock/真实切换、2–3 控件遥控焦点；Hermes 与多终端网关仍未实现。Remote 行不指 mmTV Remote |
+| Music / Photos | 今晚演示暂缓完整能力；权限探针保留；工作量见模块 `effortEstimate` / ROADMAP V0.3 |
 
 ## 遥控器迁移状态
 

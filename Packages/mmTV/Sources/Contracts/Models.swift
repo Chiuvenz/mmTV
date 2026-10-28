@@ -89,11 +89,79 @@ public struct SessionEvent: Identifiable, Equatable, Sendable {
         self.kind = kind; self.detail = detail
     }
 }
+public enum HomeControlKind: String, Codable, Sendable {
+    case light
+    case `switch`
+    case scene
+}
+
+/// One remotes-focusable HA control (light / switch / scene).
+public struct HomeControl: Identifiable, Codable, Equatable, Sendable {
+    public var id: String
+    public var title: String
+    public var kind: HomeControlKind
+    public init(id: String, title: String, kind: HomeControlKind) {
+        self.id = id; self.title = title; self.kind = kind
+    }
+    /// Demo defaults used when `useMock` is true or before the user pastes real entity IDs.
+    public static let demoDefaults: [HomeControl] = [
+        .init(id: "light.living_room", title: "客厅灯", kind: .light),
+        .init(id: "light.tv_backlight", title: "电视氛围灯", kind: .light),
+        .init(id: "scene.movie_night", title: "观影模式", kind: .scene)
+    ]
+}
+
+public struct HomeControlState: Identifiable, Equatable, Sendable {
+    public var id: String
+    public var title: String
+    public var kind: HomeControlKind
+    /// For lights/switches: on/off. Scenes stay `nil` (activation-only).
+    public var isOn: Bool?
+    public var detail: String
+    public init(id: String, title: String, kind: HomeControlKind, isOn: Bool? = nil, detail: String = "") {
+        self.id = id; self.title = title; self.kind = kind; self.isOn = isOn; self.detail = detail
+    }
+}
+
+/// Minimal Home Assistant REST client settings. Token lives only in Application Support
+/// configuration (never ship tokens in the repo or release zip).
+public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
+    public var baseURL: String
+    public var token: String
+    /// When true, Home uses in-app mock lights/scenes — no network required.
+    public var useMock: Bool
+    public var controls: [HomeControl]
+    public init(baseURL: String = "http://homeassistant.local:8123",
+                token: String = "",
+                useMock: Bool = true,
+                controls: [HomeControl] = HomeControl.demoDefaults) {
+        self.baseURL = baseURL
+        self.token = token
+        self.useMock = useMock
+        self.controls = controls
+    }
+    public var trimmedToken: String {
+        token.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    public var looksLikePlaceholderToken: Bool {
+        let value = trimmedToken.lowercased()
+        return value.isEmpty
+            || value.contains("replace")
+            || value.contains("paste")
+            || value == "your_token_here"
+    }
+    public var canUseLiveAPI: Bool {
+        !useMock && !looksLikePlaceholderToken && URL(string: baseURL) != nil
+    }
+}
+
 public struct AppConfiguration: Codable, Equatable, Sendable {
     public var schemaVersion: Int = 1
     public var entries: [AppEntry] = []
     public var disabledModules: Set<ModuleID> = []
     public var tvMode: Bool = false
+    /// Optional HA block. Absent in older configs → Home stays on mock/setup path.
+    public var homeAssistant: HomeAssistantConfiguration?
     /// Source-compatible product name; Codable continues to persist `tvMode`
     /// so existing configuration files remain valid.
     public var launchInFullScreen: Bool {

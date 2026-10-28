@@ -118,7 +118,7 @@ struct SettingsView: View {
                     settingsButton("导入配置", .importConfiguration, action: model.importConfiguration)
                     settingsButton("打开配置目录", .openConfigurationDirectory, action: model.openConfigurationDirectory)
                 }
-                Text("版本 \(model.version) · 本地预览构建\n换机器后需要重新确认路径与系统授权。Hermes、Home Assistant 和多终端服务尚未接入。").font(.caption).foregroundStyle(.secondary)
+                Text("版本 \(model.version) · 本地预览构建\n换机器后请确认路径与授权。HA 可用模拟或本机 configuration.json 的 homeAssistant 令牌；Hermes／多终端仍未接入。Music／Photos 今晚演示暂缓。").font(.caption).foregroundStyle(.secondary)
             }.padding(12)
         }
     }

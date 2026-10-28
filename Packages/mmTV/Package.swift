@@ -20,6 +20,6 @@ let package = Package(
         .target(name: "Home", dependencies: ["Contracts"]),
         .target(name: "Assistant", dependencies: ["Contracts"]),
         .target(name: "Remote", dependencies: ["Contracts"]),
-        .testTarget(name: "CoreTests", dependencies: ["Core", "Contracts", "MacHost", "Games", "TVApps", "Input"])
+        .testTarget(name: "CoreTests", dependencies: ["Core", "Contracts", "MacHost", "Games", "TVApps", "Home", "Input"])
     ]
 )

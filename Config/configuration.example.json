@@ -1,6 +1,87 @@
 {
   "schemaVersion": 1,
-  "entries": [],
+  "tvMode": true,
   "disabledModules": [],
-  "tvMode": false
+  "entries": [
+    {
+      "id": "11111111-1111-1111-1111-111111111101",
+      "title": "塞尔达 旷野之息",
+      "module": "games",
+      "kind": "application",
+      "location": "/Volumes/mmTV Media/Games/Zelda/Zelda - Breath of the Wild.app",
+      "arguments": [],
+      "applicationBundleID": "org.nxnative.01007ef00011e000",
+      "notes": "Mac mini 外置盘演示入口；盘未挂载时会显示离线。",
+      "tvInteractionVerified": true
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111102",
+      "title": "塞尔达 王国之泪",
+      "module": "games",
+      "kind": "application",
+      "location": "/Volumes/mmTV Media/Games/Zelda/Zelda - Tears of the Kingdom.app",
+      "arguments": [],
+      "applicationBundleID": "org.nxnative.0100f2c0115b6000",
+      "notes": "Mac mini 外置盘演示入口；盘未挂载时会显示离线。",
+      "tvInteractionVerified": true
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111201",
+      "title": "IINA",
+      "module": "video",
+      "kind": "application",
+      "location": "/Applications/IINA.app",
+      "arguments": [],
+      "applicationBundleID": "com.colliderli.iina",
+      "notes": "本机影片：外部播放器，不嵌入 mmTV。",
+      "tvInteractionVerified": false
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111202",
+      "title": "QuickTime Player",
+      "module": "video",
+      "kind": "application",
+      "location": "/System/Applications/QuickTime Player.app",
+      "arguments": [],
+      "applicationBundleID": "com.apple.QuickTimePlayerX",
+      "notes": "无 IINA 时的系统播放器兜底。",
+      "tvInteractionVerified": false
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111203",
+      "title": "本机影片夹",
+      "module": "video",
+      "kind": "executable",
+      "location": "/usr/bin/open",
+      "arguments": [
+        "-a",
+        "IINA",
+        "/Users/REPLACE_USERNAME/Movies"
+      ],
+      "notes": "用 IINA 打开 Movies；请把 REPLACE_USERNAME 改成你的短用户名，或改成实际影片目录。",
+      "tvInteractionVerified": false
+    }
+  ],
+  "homeAssistant": {
+    "baseURL": "http://homeassistant.local:8123",
+    "token": "REPLACE_WITH_LONG_LIVED_TOKEN",
+    "useMock": true,
+    "controls": [
+      {
+        "id": "light.living_room",
+        "title": "客厅灯",
+        "kind": "light"
+      },
+      {
+        "id": "light.tv_backlight",
+        "title": "电视氛围灯",
+        "kind": "light"
+      },
+      {
+        "id": "scene.movie_night",
+        "title": "观影模式",
+        "kind": "scene"
+      }
+    ]
+  }
 }

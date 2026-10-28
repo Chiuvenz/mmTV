@@ -25,11 +25,22 @@ public struct TVAppCandidate: Identifiable, Sendable {
         self.launchArguments = launchArguments
     }
 }
+
 public enum TVAppsModule {
     public static func descriptor(count: Int) -> ModuleDescriptor {
         .init(.video, title: "看点什么", subtitle: "电视应用 · 电影 · 视频", symbol: "play.rectangle", status: count > 0 ? .ready : .needsSetup)
     }
+
+    /// Prefer external player apps over embedding. Bili remains the adapters path; IINA/QuickTime are the fast local demo.
     public static let candidates: [TVAppCandidate] = [
+        .init(id: "iina", title: "IINA · 本机影片", detail: "已安装则一键接入；用外部播放器打开本地视频，适合今晚客厅演示。",
+              source: "https://iina.io",
+              macBundleID: "com.colliderli.iina",
+              download: "https://iina.io"),
+        .init(id: "quicktime", title: "QuickTime Player", detail: "系统自带播放器；无 IINA 时的兜底本机播放入口。",
+              source: "https://support.apple.com/guide/quicktime-player/welcome/mac",
+              macBundleID: "com.apple.QuickTimePlayerX",
+              download: "https://support.apple.com/guide/quicktime-player/welcome/mac"),
         .init(id: "youtube", title: "YouTube / VacuumTube", detail: "可自动检测；上游 v2.0.1 未通过 macOS 严格签名校验，暂不自动安装。",
               source: "https://github.com/shy1132/VacuumTube",
               macBundleID: "rocks.shy.VacuumTube",
@@ -40,6 +51,7 @@ public enum TVAppsModule {
               download: "https://github.com/Chiuvenz/mmTVAdapters",
               launchArguments: ["--tv-fullscreen"])
     ].compactMap { $0 }
+
     public static func entries(in configuration: AppConfiguration) -> [AppEntry] {
         configuration.entries.filter { $0.module == .video }
     }

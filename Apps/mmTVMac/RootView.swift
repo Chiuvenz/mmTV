@@ -131,7 +131,71 @@ struct RootView: View {
             }.padding(.vertical, 15)
             if module.id == .games || module.id == .video {
                 appGrid(module: module, columns: columns)
+            } else if module.id == .home {
+                homeControlsGrid(columns: columns)
             } else { upcomingModule(module) }
+        }
+    }
+    @ViewBuilder private func homeControlsGrid(columns: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Text(model.homeUsingMock ? "模拟家居（可切真实 HA）" : "Home Assistant")
+                    .font(.system(size: 21, weight: .medium))
+                if model.homeLoading { ProgressView().controlSize(.small) }
+                Spacer()
+                Button("刷新") { model.refreshHome() }.font(.system(size: 13))
+            }
+            if let note = model.homeMessage {
+                Text(note).font(.system(size: 13)).foregroundStyle(TVTheme.muted)
+            }
+            Text("方向键选中，确认切换灯或激活场景。令牌写在本机 configuration.json，勿提交仓库。")
+                .font(.system(size: 12)).foregroundStyle(TVTheme.muted)
+        }.padding(.vertical, 8)
+        if model.homeStates.isEmpty {
+            TVCard(selected: model.focus.index == 0, action: model.refreshHome) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("尚未加载控件").font(.system(size: 22, weight: .medium))
+                    Text("确认后刷新；或先跑 Scripts/seed-demo-config.sh 写入示例 homeAssistant。")
+                        .font(.system(size: 13)).foregroundStyle(TVTheme.muted)
+                }.frame(height: 120, alignment: .top)
+            }.id(0)
+        } else {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
+                ForEach(Array(model.homeStates.enumerated()), id: \.element.id) { index, state in
+                    TVCard(selected: model.focus.index == index, action: {
+                        model.focus.select(index, count: model.itemCount)
+                        model.activateFocusedHomeControl()
+                    }) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Image(systemName: homeSymbol(state))
+                                    .font(.system(size: 28, weight: .light))
+                                    .foregroundStyle(TVTheme.mint)
+                                Spacer()
+                                StatusPill(homePill(state), ready: state.isOn == true || state.kind == .scene)
+                            }
+                            Text(state.title).font(.system(size: 22, weight: .medium)).lineLimit(1)
+                            Text(state.detail.isEmpty ? state.id : state.detail)
+                                .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
+                        }.frame(height: 130, alignment: .top)
+                    }.id(index)
+                }
+            }
+        }
+    }
+    private func homeSymbol(_ state: HomeControlState) -> String {
+        switch state.kind {
+        case .light: return state.isOn == true ? "lightbulb.fill" : "lightbulb"
+        case .switch: return state.isOn == true ? "power.circle.fill" : "power.circle"
+        case .scene: return "sparkles.tv"
+        }
+    }
+    private func homePill(_ state: HomeControlState) -> String {
+        switch state.kind {
+        case .scene: return "场景"
+        case .light, .switch:
+            if let on = state.isOn { return on ? "开" : "关" }
+            return "—"
         }
     }
     @ViewBuilder private func appGrid(module: ModuleDescriptor, columns: Int) -> some View {
@@ -235,7 +299,7 @@ struct RootView: View {
                     .disabled(model.loadingProbe || !canProbe)
                     .remoteSelected(canProbe && model.setupFocus == 0)
                 if let result = model.probeResult { Text(result).font(.callout).foregroundStyle(TVTheme.mint) }
-                Text(model.session.route == .music && !MusicModule.accountConnectionEnabled ? "此预览构建尚未启用 Apple Music 账户连接。需完成开发者签名配置后验证；完整播放器在 V0.3 接入。" : "授权由系统管理；当前版本只做权限验证，完整音乐播放器与影像馆将在 V0.3 接入。")
+                Text(model.session.route == .music ? MusicModule.effortEstimate : PhotosModule.effortEstimate)
                     .font(.caption).foregroundStyle(.secondary)
             }
             HStack {
@@ -267,8 +331,8 @@ struct RootView: View {
     }
     private func setupDescription(_ id: ModuleID) -> String {
         switch id {
-        case .music: "以 Apple Music 为内容与播放基础，提供适合电视的歌单、搜索和播放队列。此模块独立开发，账户授权在每台 Mac 上分别配置。"
-        case .photos: "从系统照片图库或你选择的本地目录建立私人影像馆。Google Drive 的备份需要先同步到本机，或导入系统照片图库。"
+        case .music: "今晚演示暂缓完整播放器。" + MusicModule.effortEstimate
+        case .photos: "今晚演示暂缓完整影像馆。" + PhotosModule.effortEstimate
         case .home: HomeModule.setupDescription
         case .assistant: AssistantModule.setupDescription
         case .remote: RemoteModule.setupDescription

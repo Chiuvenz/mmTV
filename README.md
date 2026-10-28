@@ -28,7 +28,7 @@ build.sh 使用已安装的 XcodeGen 生成工程；所有 Swift 模块均为本
 - 路径与外置资源离线检查，参数数组传递，原子配置写入及上一份备份。
 - `.app` 跨机器自动重定位、入口健康状态、运行事件记录与诊断报告导出。
 - VacuumTube 安装检测与接入（官方 v2.0.1 因签名无效暂不自动安装）；BiliTVMac（`com.mmtv.bilitv`，仓外 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)）可由主壳自动检测并以 `--tv-fullscreen` 启动。
-- 七个独立功能 target；音乐和照片有手动权限验证接口，HA/AI/多终端为待接入入口。
+- 七个独立功能 target；HA 已有 REST／mock 客厅演示切片；音乐和照片仍为权限探针（完整能力暂缓）；AI／多终端为待接入入口。
 - mmTV Remote V0.3 已独立交付；未来手机/平板使用的 `Remote` 模块是另一项网络控制能力。
 
 ## 文档
@@ -40,4 +40,4 @@ build.sh 使用已安装的 XcodeGen 生成工程；所有 Swift 模块均为本
 - [视频客户端接入记录](docs/VIDEO-INTEGRATIONS.md)
 - [第三方适配器仓库](https://github.com/Chiuvenz/mmTVAdapters) · [Integrations 说明](Integrations/README.md)
 
-开发在 MacBook 进行；首个可运行包即可部署到 Mac mini 验证真实电视链路。Google Drive 照片同步、完整 MusicKit 播放器、影像馆、HA/Hermes 连接、网络控制与 TVCompat 仍按后续阶段推进。
+开发在 MacBook 进行；首个可运行包即可部署到 Mac mini 验证真实电视链路。客厅快演示：`./Scripts/seed-demo-config.sh` 合并塞尔达／IINA／模拟 HA；真实 HA 令牌写入本机 `configuration.json`（见 `Config/configuration.example.json`）。Google Drive 照片同步、完整 MusicKit／影像馆、Hermes、网络控制与 TVCompat 仍按后续阶段推进。

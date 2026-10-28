@@ -46,6 +46,11 @@ enum SettingsRemoteTarget: Hashable {
     var systemVolume: Float32?
     var showingVolumeHUD = false
     private var volumeHUDTask: Task<Void, Never>?
+    private let homeClient = HomeAssistantClient()
+    var homeStates: [HomeControlState] = []
+    var homeLoading = false
+    var homeMessage: String?
+    private var homeRefreshTask: Task<Void, Never>?
 
     var configuration: AppConfiguration { configurationController.configuration }
     var loadError: String? { configurationController.loadError }
@@ -99,14 +104,27 @@ enum SettingsRemoteTarget: Hashable {
     }
     var modules: [ModuleDescriptor] {
         let launchableIDs = Set(entryAvailability.values.filter(\.health.isLaunchable).map(\.entryID))
-        let all = [GamesModule.descriptor(count: entries(.games).filter { launchableIDs.contains($0.id) }.count), TVAppsModule.descriptor(count: entries(.video).filter { launchableIDs.contains($0.id) }.count),
-                   MusicModule.descriptor, PhotosModule.descriptor, HomeModule.descriptor, AssistantModule.descriptor, RemoteModule.descriptor]
+        let all = [
+            GamesModule.descriptor(count: entries(.games).filter { launchableIDs.contains($0.id) }.count),
+            TVAppsModule.descriptor(count: entries(.video).filter { launchableIDs.contains($0.id) }.count),
+            MusicModule.descriptor,
+            PhotosModule.descriptor,
+            HomeModule.descriptor(for: configuration.homeAssistant),
+            AssistantModule.descriptor,
+            RemoteModule.descriptor
+        ]
         return all.map { module in
             if configuration.disabledModules.contains(module.id) {
                 return .init(module.id, title: module.title, subtitle: module.subtitle, symbol: module.symbol, status: .disabled)
             }
             return module
         }
+    }
+    var homeConfiguration: HomeAssistantConfiguration {
+        HomeModule.resolvedConfiguration(in: configuration)
+    }
+    var homeUsingMock: Bool {
+        homeConfiguration.useMock || !homeConfiguration.canUseLiveAPI
     }
     var visibleModules: [ModuleDescriptor] {
         modules.filter { !configuration.disabledModules.contains($0.id) && (isolatedModule == nil || $0.id == isolatedModule) }
@@ -132,6 +150,7 @@ enum SettingsRemoteTarget: Hashable {
         switch session.route {
         case nil: visibleModules.count
         case .games, .video: currentEntries.count + 1
+        case .home: max(homeStates.count, 1)
         default: 1
         }
     }
@@ -162,6 +181,7 @@ enum SettingsRemoteTarget: Hashable {
         navigationGeneration += 1
         homeFocus = focus.index; focus = GridFocus(); probeResult = nil
         Task { await session.dispatch(.openModule(module), entries: configuration.entries, disabled: configuration.disabledModules) }
+        if module == .home { refreshHome() }
     }
     func returnHome() {
         navigationGeneration += 1
@@ -266,6 +286,8 @@ enum SettingsRemoteTarget: Hashable {
             } else if session.route == .games || session.route == .video {
                 let list = currentEntries
                 if list.indices.contains(focus.index) { launch(list[focus.index]) } else { addEntry() }
+            } else if session.route == .home {
+                activateFocusedHomeControl()
             } else { openSetup() }
         case .up, .down, .left, .right:
             focus.move(event, count: itemCount, columns: columns)
@@ -398,6 +420,59 @@ enum SettingsRemoteTarget: Hashable {
             }
         }
     }
+    func refreshHome() {
+        homeRefreshTask?.cancel()
+        homeLoading = true
+        homeMessage = nil
+        let config = homeConfiguration
+        homeRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            let result = await homeClient.snapshot(for: config)
+            guard !Task.isCancelled else { return }
+            homeLoading = false
+            switch result {
+            case .success(let states):
+                homeStates = states
+                focus.select(min(focus.index, max(0, states.count - 1)), count: max(states.count, 1))
+                if config.useMock {
+                    homeMessage = "模拟模式：改配置 useMock=false 并粘贴 long-lived token 可连真实 HA。"
+                } else if !config.canUseLiveAPI {
+                    homeMessage = "令牌仍是占位或为空，当前仍走模拟。请编辑 Application Support/mmTV/configuration.json。"
+                } else {
+                    homeMessage = "已连接 \(config.baseURL)"
+                }
+            case .failure(let error):
+                homeStates = (config.controls.isEmpty ? HomeControl.demoDefaults : config.controls).map {
+                    HomeControlState(id: $0.id, title: $0.title, kind: $0.kind, isOn: nil, detail: "离线")
+                }
+                homeMessage = "HA 不可用：\(error.localizedDescription)。其他模块不受影响。"
+            }
+        }
+    }
+    func activateFocusedHomeControl() {
+        guard homeStates.indices.contains(focus.index) else {
+            refreshHome()
+            return
+        }
+        let state = homeStates[focus.index]
+        let control = HomeControl(id: state.id, title: state.title, kind: state.kind)
+        let config = homeConfiguration
+        homeLoading = true
+        Task { [weak self] in
+            guard let self else { return }
+            let result = await homeClient.activate(control, configuration: config)
+            homeLoading = false
+            switch result {
+            case .success(let updated):
+                if let index = homeStates.firstIndex(where: { $0.id == updated.id }) {
+                    homeStates[index] = updated
+                }
+                homeMessage = "\(updated.title)：\(updated.detail)"
+            case .failure(let error):
+                homeMessage = error.localizedDescription
+            }
+        }
+    }
     func exportConfiguration() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "mmTV-configuration.json"
@@ -438,6 +513,7 @@ enum SettingsRemoteTarget: Hashable {
         #else
         let architecture = "x86_64"
         #endif
+        let ha = configuration.homeAssistant
         let report = """
         mmTV diagnostics
         generated: \(Date.now.ISO8601Format())
@@ -446,6 +522,7 @@ enum SettingsRemoteTarget: Hashable {
         architecture: \(architecture)
         globalHomeHotkey: \(input.globalHomeAvailable ? "available" : "unavailable")
         remoteOwnership: mmTV Remote injects keyboard; mmTV keeps focus only
+        homeAssistant: \(ha == nil ? "absent" : (homeUsingMock ? "mock" : "live")) baseURL=\(ha?.baseURL ?? "-") controls=\(ha?.controls.count ?? 0) tokenSet=\(ha.map { !$0.looksLikePlaceholderToken } ?? false)
         config: \(store.url.path)
 
         entries:
