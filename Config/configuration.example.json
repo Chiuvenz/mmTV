@@ -64,7 +64,7 @@
     "baseURL": "http://homeassistant.local:8123",
     "token": "REPLACE_WITH_LONG_LIVED_TOKEN",
     "useMock": true,
-    "uiMode": "lovelace",
+    "uiMode": "controls",
     "dashboardPath": "/",
     "controls": [
       {
