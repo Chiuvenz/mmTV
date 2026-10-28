@@ -106,7 +106,10 @@ enum SettingsRemoteTarget: Hashable {
         let launchableIDs = Set(entryAvailability.values.filter(\.health.isLaunchable).map(\.entryID))
         let all = [
             GamesModule.descriptor(count: entries(.games).filter { launchableIDs.contains($0.id) }.count),
-            TVAppsModule.descriptor(count: entries(.video).filter { launchableIDs.contains($0.id) }.count),
+            TVAppsModule.descriptor(
+                count: entries(.video).filter { launchableIDs.contains($0.id) }.count,
+                mediaLibrary: configuration.mediaLibrary
+            ),
             MusicModule.descriptor,
             PhotosModule.descriptor,
             HomeModule.descriptor(for: configuration.homeAssistant),
@@ -125,6 +128,19 @@ enum SettingsRemoteTarget: Hashable {
     }
     var homeUsingMock: Bool {
         homeConfiguration.useMock || !homeConfiguration.canUseLiveAPI
+    }
+    var mediaLibrary: MediaLibraryConfiguration? {
+        configuration.mediaLibrary
+    }
+    /// Home focus rows: optional Lovelace opener + control states (+ empty placeholder).
+    var homeChromeCount: Int {
+        (homeConfiguration.dashboardURL != nil ? 1 : 0) + max(homeStates.count, homeStates.isEmpty ? 1 : 0)
+    }
+    var homeDashboardFocusIndex: Int? {
+        homeConfiguration.dashboardURL == nil ? nil : 0
+    }
+    var homeControlsFocusOffset: Int {
+        homeConfiguration.dashboardURL == nil ? 0 : 1
     }
     var visibleModules: [ModuleDescriptor] {
         modules.filter { !configuration.disabledModules.contains($0.id) && (isolatedModule == nil || $0.id == isolatedModule) }
@@ -148,11 +164,22 @@ enum SettingsRemoteTarget: Hashable {
     }
     var itemCount: Int {
         switch session.route {
-        case nil: visibleModules.count
-        case .games, .video: currentEntries.count + 1
-        case .home: max(homeStates.count, 1)
-        default: 1
+        case nil:
+            return visibleModules.count
+        case .games:
+            return currentEntries.count + 1
+        case .video:
+            let librarySlot = mediaLibrary?.libraryURL == nil ? 0 : 1
+            return librarySlot + currentEntries.count + 1
+        case .home:
+            return homeChromeCount
+        default:
+            return 1
         }
+    }
+    var showingEmbeddedWeb: Bool {
+        if case .embeddedWeb = presentation { return true }
+        return false
     }
     func save(_ updated: AppConfiguration) throws {
         try configurationController.save(updated)
@@ -267,6 +294,15 @@ enum SettingsRemoteTarget: Hashable {
             else if event == .home { returnHome() }
             return
         }
+        if showingEmbeddedWeb {
+            switch event {
+            case .back, .home:
+                presentation = nil
+                if event == .home { returnHome() }
+            default: break
+            }
+            return
+        }
         if showingSettings { handleSettings(event); return }
         if showingSetup { handleSetup(event); return }
         if isEditing {
@@ -283,15 +319,73 @@ enum SettingsRemoteTarget: Hashable {
             if session.route == nil {
                 let list = visibleModules
                 if list.indices.contains(focus.index) { open(list[focus.index].id) }
-            } else if session.route == .games || session.route == .video {
+            } else if session.route == .games {
                 let list = currentEntries
                 if list.indices.contains(focus.index) { launch(list[focus.index]) } else { addEntry() }
+            } else if session.route == .video {
+                activateFocusedVideoItem()
             } else if session.route == .home {
-                activateFocusedHomeControl()
+                activateFocusedHomeItem()
             } else { openSetup() }
         case .up, .down, .left, .right:
             focus.move(event, count: itemCount, columns: columns)
         case .menu, .volumeUp, .volumeDown, .voice: break
+        }
+    }
+
+    func openHomeDashboard() {
+        guard let url = homeConfiguration.dashboardURL else {
+            message = "尚未配置 Home Assistant 地址（homeAssistant.baseURL）。"
+            return
+        }
+        presentation = .embeddedWeb(
+            title: "Home Assistant",
+            url: url,
+            footnote: "开源 Lovelace 前端。HA 需你自建可达；可选 HACS「WallPanel」做电视仪表盘。返回键退出 WebView；快捷控件仍可用遥控。"
+        )
+    }
+
+    func openMediaLibrary() {
+        guard let library = mediaLibrary, let url = library.libraryURL else {
+            message = "尚未配置 mediaLibrary.baseURL（默认 http://127.0.0.1:8096）。请先安装并启动 Jellyfin。"
+            return
+        }
+        if library.embedInShell {
+            presentation = .embeddedWeb(
+                title: library.displayTitle,
+                url: url,
+                footnote: "库目录：\(library.libraryRoots.joined(separator: " · "))。今晚需 brew install --cask jellyfin 并在向导中添加这些文件夹。"
+            )
+        } else {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func openPresentedURLExternally() {
+        guard case .embeddedWeb(_, let url, _) = presentation else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func activateFocusedHomeItem() {
+        if let dash = homeDashboardFocusIndex, focus.index == dash {
+            openHomeDashboard()
+            return
+        }
+        activateFocusedHomeControl()
+    }
+
+    func activateFocusedVideoItem() {
+        let hasLibrary = mediaLibrary?.libraryURL != nil
+        if hasLibrary && focus.index == 0 {
+            openMediaLibrary()
+            return
+        }
+        let entryIndex = focus.index - (hasLibrary ? 1 : 0)
+        let list = currentEntries
+        if list.indices.contains(entryIndex) {
+            launch(list[entryIndex])
+        } else {
+            addEntry()
         }
     }
 
@@ -433,13 +527,13 @@ enum SettingsRemoteTarget: Hashable {
             switch result {
             case .success(let states):
                 homeStates = states
-                focus.select(min(focus.index, max(0, states.count - 1)), count: max(states.count, 1))
+                focus.select(min(focus.index, max(0, homeChromeCount - 1)), count: homeChromeCount)
                 if config.useMock {
-                    homeMessage = "模拟模式：改配置 useMock=false 并粘贴 long-lived token 可连真实 HA。"
+                    homeMessage = "模拟模式：可先练快捷控件；配置 baseURL 后也能打开 Lovelace。live 时建议 uiMode=lovelace。"
                 } else if !config.canUseLiveAPI {
-                    homeMessage = "令牌仍是占位或为空，当前仍走模拟。请编辑 Application Support/mmTV/configuration.json。"
+                    homeMessage = "令牌仍是占位：快捷控件走模拟；仍可打开 Lovelace（HA 自带登录）。"
                 } else {
-                    homeMessage = "已连接 \(config.baseURL)"
+                    homeMessage = "已连接 \(config.baseURL)·UI \(config.uiMode.rawValue)"
                 }
             case .failure(let error):
                 homeStates = (config.controls.isEmpty ? HomeControl.demoDefaults : config.controls).map {
@@ -450,11 +544,12 @@ enum SettingsRemoteTarget: Hashable {
         }
     }
     func activateFocusedHomeControl() {
-        guard homeStates.indices.contains(focus.index) else {
+        let controlIndex = focus.index - homeControlsFocusOffset
+        guard homeStates.indices.contains(controlIndex) else {
             refreshHome()
             return
         }
-        let state = homeStates[focus.index]
+        let state = homeStates[controlIndex]
         let control = HomeControl(id: state.id, title: state.title, kind: state.kind)
         let config = homeConfiguration
         homeLoading = true
@@ -514,6 +609,7 @@ enum SettingsRemoteTarget: Hashable {
         let architecture = "x86_64"
         #endif
         let ha = configuration.homeAssistant
+        let ml = configuration.mediaLibrary
         let report = """
         mmTV diagnostics
         generated: \(Date.now.ISO8601Format())
@@ -522,7 +618,8 @@ enum SettingsRemoteTarget: Hashable {
         architecture: \(architecture)
         globalHomeHotkey: \(input.globalHomeAvailable ? "available" : "unavailable")
         remoteOwnership: mmTV Remote injects keyboard; mmTV keeps focus only
-        homeAssistant: \(ha == nil ? "absent" : (homeUsingMock ? "mock" : "live")) baseURL=\(ha?.baseURL ?? "-") controls=\(ha?.controls.count ?? 0) tokenSet=\(ha.map { !$0.looksLikePlaceholderToken } ?? false)
+        homeAssistant: \(ha == nil ? "absent" : (homeUsingMock ? "mock" : "live")) uiMode=\(ha?.uiMode.rawValue ?? "-") baseURL=\(ha?.baseURL ?? "-") dashboard=\(ha?.dashboardURL?.absoluteString ?? "-") controls=\(ha?.controls.count ?? 0) tokenSet=\(ha.map { !$0.looksLikePlaceholderToken } ?? false)
+        mediaLibrary: \(ml == nil ? "absent" : "\(ml!.provider.rawValue)") baseURL=\(ml?.baseURL ?? "-") embed=\(ml.map { String($0.embedInShell) } ?? "-") roots=\(ml?.libraryRoots.joined(separator: ",") ?? "-")
         config: \(store.url.path)
 
         entries:

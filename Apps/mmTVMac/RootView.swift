@@ -42,6 +42,15 @@ struct RootView: View {
                 setupSheet
             case .editor(let entry):
                 EntryEditor(entry: entry, onSave: model.upsert)
+            case .embeddedWeb(let title, let url, let footnote):
+                EmbeddedWebChrome(
+                    title: title,
+                    url: url,
+                    footnote: footnote,
+                    onClose: model.dismissPresentation,
+                    onOpenExternally: model.openPresentedURLExternally
+                )
+                .frame(minWidth: 1100, minHeight: 700)
             }
         }
         .alert("提示", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
@@ -139,7 +148,7 @@ struct RootView: View {
     @ViewBuilder private func homeControlsGrid(columns: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Text(model.homeUsingMock ? "模拟家居（可切真实 HA）" : "Home Assistant")
+                Text(model.homeUsingMock ? "模拟家居 · 可开 Lovelace" : "Home Assistant")
                     .font(.system(size: 21, weight: .medium))
                 if model.homeLoading { ProgressView().controlSize(.small) }
                 Spacer()
@@ -148,22 +157,43 @@ struct RootView: View {
             if let note = model.homeMessage {
                 Text(note).font(.system(size: 13)).foregroundStyle(TVTheme.muted)
             }
-            Text("方向键选中，确认切换灯或激活场景。令牌写在本机 configuration.json，勿提交仓库。")
+            Text("优先打开开源 Lovelace 仪表盘（壳内 WebView）；下方快捷控件仍可用遥控。HA URL 需你自建托管。")
                 .font(.system(size: 12)).foregroundStyle(TVTheme.muted)
         }.padding(.vertical, 8)
-        if model.homeStates.isEmpty {
-            TVCard(selected: model.focus.index == 0, action: model.refreshHome) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("尚未加载控件").font(.system(size: 22, weight: .medium))
-                    Text("确认后刷新；或先跑 Scripts/seed-demo-config.sh 写入示例 homeAssistant。")
-                        .font(.system(size: 13)).foregroundStyle(TVTheme.muted)
-                }.frame(height: 120, alignment: .top)
-            }.id(0)
-        } else {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
+            if let dashIndex = model.homeDashboardFocusIndex {
+                TVCard(selected: model.focus.index == dashIndex, action: {
+                    model.focus.select(dashIndex, count: model.itemCount)
+                    model.openHomeDashboard()
+                }) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "rectangle.3.group")
+                                .font(.system(size: 28, weight: .light))
+                                .foregroundStyle(TVTheme.mint)
+                            Spacer()
+                            StatusPill(model.homeConfiguration.uiMode == .lovelace ? "Lovelace" : "仪表盘", ready: true)
+                        }
+                        Text("打开 HA 仪表盘").font(.system(size: 22, weight: .medium)).lineLimit(1)
+                        Text(model.homeConfiguration.dashboardURL?.absoluteString ?? model.homeConfiguration.baseURL)
+                            .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
+                    }.frame(height: 130, alignment: .top)
+                }.id(dashIndex)
+            }
+            if model.homeStates.isEmpty {
+                let emptyIndex = model.homeControlsFocusOffset
+                TVCard(selected: model.focus.index == emptyIndex, action: model.refreshHome) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("尚未加载快捷控件").font(.system(size: 22, weight: .medium))
+                        Text("确认后刷新；或跑 Scripts/seed-demo-config.sh。")
+                            .font(.system(size: 13)).foregroundStyle(TVTheme.muted)
+                    }.frame(height: 120, alignment: .top)
+                }.id(emptyIndex)
+            } else {
                 ForEach(Array(model.homeStates.enumerated()), id: \.element.id) { index, state in
-                    TVCard(selected: model.focus.index == index, action: {
-                        model.focus.select(index, count: model.itemCount)
+                    let focusIndex = index + model.homeControlsFocusOffset
+                    TVCard(selected: model.focus.index == focusIndex, action: {
+                        model.focus.select(focusIndex, count: model.itemCount)
                         model.activateFocusedHomeControl()
                     }) {
                         VStack(alignment: .leading, spacing: 16) {
@@ -178,7 +208,7 @@ struct RootView: View {
                             Text(state.detail.isEmpty ? state.id : state.detail)
                                 .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
                         }.frame(height: 130, alignment: .top)
-                    }.id(index)
+                    }.id(focusIndex)
                 }
             }
         }
@@ -199,18 +229,48 @@ struct RootView: View {
         }
     }
     @ViewBuilder private func appGrid(module: ModuleDescriptor, columns: Int) -> some View {
-        if model.currentEntries.isEmpty {
+        let libraryOffset = (module.id == .video && model.mediaLibrary?.libraryURL != nil) ? 1 : 0
+        if module.id == .video, let library = model.mediaLibrary {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("媒体库（优先）").font(.system(size: 21, weight: .medium))
+                Text("外置盘库根：\(library.libraryRoots.joined(separator: " · "))。需本机安装并启动 Jellyfin 后打开。")
+                    .font(.system(size: 13)).foregroundStyle(TVTheme.muted)
+            }.padding(.vertical, 8)
+        } else if model.currentEntries.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Text(module.id == .games ? "把你的第一款游戏带到客厅" : "接入你喜欢的电视应用")
                     .font(.system(size: 21, weight: .medium))
-                Text(module.id == .games ? "选择已安装的游戏或启动器。资源保留在原来的位置。" : "选择已安装的 .app。每款应用的电视交互与播放能力需要分别验证。")
+                Text(module.id == .games ? "选择已安装的游戏或启动器。资源保留在原来的位置。" : "优先 Jellyfin 媒体库；IINA 仅作单文件兜底。")
                     .font(.system(size: 14)).foregroundStyle(TVTheme.muted)
             }.padding(.vertical, 15)
         }
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
+            if module.id == .video, let library = model.mediaLibrary, library.libraryURL != nil {
+                TVCard(selected: model.focus.index == 0, action: {
+                    model.focus.select(0, count: model.itemCount)
+                    model.openMediaLibrary()
+                }) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "film.stack")
+                                .font(.system(size: 33))
+                                .foregroundStyle(TVTheme.amber)
+                                .frame(width: 48, height: 48)
+                            Spacer()
+                            StatusPill(library.provider.rawValue, ready: true)
+                        }
+                        Text(library.displayTitle).font(.system(size: 22, weight: .medium)).lineLimit(1)
+                        Text(library.baseURL).font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
+                    }.frame(height: 140, alignment: .top)
+                }.id(0)
+            }
             ForEach(Array(model.currentEntries.enumerated()), id: \.element.id) { index, entry in
+                let focusIndex = index + libraryOffset
                 let health = model.health(entry)
-                TVCard(selected: model.focus.index == index, action: { model.focus.select(index, count: model.itemCount); model.launch(entry) }) {
+                TVCard(selected: model.focus.index == focusIndex, action: {
+                    model.focus.select(focusIndex, count: model.itemCount)
+                    model.launch(entry)
+                }) {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             AppIcon(
@@ -227,7 +287,7 @@ struct RootView: View {
                             .font(.system(size: 12)).foregroundStyle(TVTheme.muted)
                     }.frame(height: 140, alignment: .top)
                 }
-                .id(index)
+                .id(focusIndex)
                 .contextMenu {
                     Button("编辑入口") { model.edit(entry) }
                     Button("在 Finder 中显示") {
@@ -241,13 +301,14 @@ struct RootView: View {
                     Button("移除入口", role: .destructive) { model.remove(entry) }
                 }
             }
-            TVCard(selected: model.focus.index == model.currentEntries.count, action: model.addEntry) {
+            let addIndex = model.currentEntries.count + libraryOffset
+            TVCard(selected: model.focus.index == addIndex, action: model.addEntry) {
                 VStack(alignment: .leading, spacing: 20) {
                     Image(systemName: "plus").font(.system(size: 30, weight: .light)).foregroundStyle(TVTheme.mint).frame(height: 44)
                     Text(module.id == .games ? "添加游戏" : "添加视频应用").font(.system(size: 22, weight: .medium))
                     Text("选择本机应用或启动器").font(.system(size: 12)).foregroundStyle(TVTheme.muted)
                 }.frame(height: 140, alignment: .top)
-            }.id(model.currentEntries.count)
+            }.id(addIndex)
         }
         if module.id == .video {
             VStack(alignment: .leading, spacing: 14) {

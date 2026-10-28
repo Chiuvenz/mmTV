@@ -71,7 +71,11 @@ PhotoGallery 提供手动权限探针，只有点击验证按钮才请求系统�
 
 Music 的账户连接在当前 ad-hoc 预览构建中禁用。后续完成 MusicKit capability、签名和账号实验后，由宿主 Info.plist 的 mmTVMusicKitEnabled 显式启用；该开关本身不能替代开发者授权与 entitlement。完整播放器尚未实现。
 
-Home 已支持客厅演示切片：`configuration.json` 的 `homeAssistant`（`baseURL`、long-lived `token`、`useMock`、`controls`）。`useMock: true` 时无网络可切灯/场景；粘贴真实令牌并设 `useMock: false` 后走 HA REST。示例见 `Config/configuration.example.json`；本机可跑 `./Scripts/seed-demo-config.sh` 合并塞尔达 / IINA / 模拟 HA（保留已有 Bili 等入口）。Assistant、Remote（多终端网关）仍为说明入口。各模块可在设置中独立启停。
+Home 优先打开开源 **Home Assistant Lovelace**（壳内 WKWebView；可选 HACS WallPanel）。`configuration.json` 的 `homeAssistant` 含 `baseURL`、`uiMode`（`lovelace`|`controls`）、`dashboardPath`、可选 long-lived `token`、`useMock`、`controls`。Lovelace 用 HA 自带登录；令牌仅 REST 快捷控件需要。用户需自建并可访问的 HA URL。
+
+视频优先 **Jellyfin**：`mediaLibrary`（`provider`、`baseURL`、`embedInShell`、`libraryRoots`）。本机库根为 `/Volumes/mmTV Media/Media/Movies` 与 `…/TV`（需先 `brew install --cask jellyfin`）。IINA/QuickTime 为兜底。
+
+示例见 `Config/configuration.example.json`；`./Scripts/seed-demo-config.sh` 合并塞尔达 / Jellyfin / Lovelace HA（保留已有 Bili 等入口）。Assistant、Remote（多终端网关）仍为说明入口。各模块可在设置中独立启停。
 
 Music / Photos：完整播放器与影像馆仍属 V0.3，工作面大（约 5—8 集中工作日量级），今晚演示刻意暂缓，仅保留授权探针。
 

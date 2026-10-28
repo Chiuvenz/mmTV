@@ -11,6 +11,7 @@
 		17161347C3665C568C65BAD4 /* PhotoGallery in Frameworks */ = {isa = PBXBuildFile; productRef = 18310453223A5F68C6D1B4CC /* PhotoGallery */; };
 		1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */; };
 		271A68FB41212D9A3023DC4C /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = DB0F1A2943F2697ED7AE2F70 /* DesignSystem */; };
+		445D2B35FDF5E5C11D099A9B /* EmbeddedWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C74B2CB5AEBD25F1A378EA8 /* EmbeddedWebView.swift */; };
 		575AC3DF418735F89047BFE8 /* TVApps in Frameworks */ = {isa = PBXBuildFile; productRef = 089211EBB28359DAFCCC65CE /* TVApps */; };
 		58EB47577D852D2FB9C28730 /* AppConfigurationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F720B7A73EA6755EF76CA6 /* AppConfigurationController.swift */; };
 		62EA25E57E5559CE60E523AE /* MacHost in Frameworks */ = {isa = PBXBuildFile; productRef = 99B5E419FA6A8D427D063DF5 /* MacHost */; };
@@ -34,6 +35,7 @@
 		4CB19130A18E538B1B692795 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewRenderer.swift; sourceTree = "<group>"; };
 		566F927B11997688EA19A5CF /* mmTV */ = {isa = PBXFileReference; lastKnownFileType = folder; name = mmTV; path = Packages/mmTV; sourceTree = SOURCE_ROOT; };
+		6C74B2CB5AEBD25F1A378EA8 /* EmbeddedWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedWebView.swift; sourceTree = "<group>"; };
 		7249AD04AA9359CBE7307C76 /* EntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryEditor.swift; sourceTree = "<group>"; };
 		BBA410CF762649D0E6D007B4 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		C5E98F850FF4969BDCD7AC54 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 				F2F720B7A73EA6755EF76CA6 /* AppConfigurationController.swift */,
 				4CB19130A18E538B1B692795 /* AppModel.swift */,
 				F67EA4191DFA6DD97C58F06A /* AppPresentation.swift */,
+				6C74B2CB5AEBD25F1A378EA8 /* EmbeddedWebView.swift */,
 				7249AD04AA9359CBE7307C76 /* EntryEditor.swift */,
 				C877569049113226D1C515C2 /* mmTVApp.swift */,
 				52F0A66914C4A5C8DB2F05E7 /* PreviewRenderer.swift */,
@@ -183,6 +186,7 @@
 				58EB47577D852D2FB9C28730 /* AppConfigurationController.swift in Sources */,
 				84E3DADCE82FB2C30592DFB2 /* AppModel.swift in Sources */,
 				7C9AA65C7FF2EB362C19137C /* AppPresentation.swift in Sources */,
+				445D2B35FDF5E5C11D099A9B /* EmbeddedWebView.swift in Sources */,
 				84265BF0E90F5494D67957EF /* EntryEditor.swift in Sources */,
 				1E064C50C7985780A91A35BF /* PreviewRenderer.swift in Sources */,
 				E0B8D0568FF183A0CD908A38 /* RootView.swift in Sources */,
