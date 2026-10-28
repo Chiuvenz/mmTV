@@ -71,7 +71,9 @@ PhotoGallery 提供手动权限探针，只有点击验证按钮才请求系统�
 
 Music 的账户连接在当前 ad-hoc 预览构建中禁用。后续完成 MusicKit capability、签名和账号实验后，由宿主 Info.plist 的 mmTVMusicKitEnabled 显式启用；该开关本身不能替代开发者授权与 entitlement。完整播放器尚未实现。
 
-Home、Assistant、Remote 目前为独立模块与说明入口，不连接 HA/Hermes，不监听网络端口。这里的 Remote 是未来手机/平板多终端网关，不是已经独立交付的 mmTV Remote。各模块可以在设置中独立启停。
+Home 已支持客厅演示切片：`configuration.json` 的 `homeAssistant`（`baseURL`、long-lived `token`、`useMock`、`controls`）。`useMock: true` 时无网络可切灯/场景；粘贴真实令牌并设 `useMock: false` 后走 HA REST。示例见 `Config/configuration.example.json`；本机可跑 `./Scripts/seed-demo-config.sh` 合并塞尔达 / IINA / 模拟 HA（保留已有 Bili 等入口）。Assistant、Remote（多终端网关）仍为说明入口。各模块可在设置中独立启停。
+
+Music / Photos：完整播放器与影像馆仍属 V0.3，工作面大（约 5—8 集中工作日量级），今晚演示刻意暂缓，仅保留授权探针。
 
 ## 生成界面预览
 

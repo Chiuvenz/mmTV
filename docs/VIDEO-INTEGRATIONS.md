@@ -1,6 +1,15 @@
 # 视频应用接入记录
 
-状态：通用本机应用/启动器适配已实现；BiliTVMac 适配器源码在 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)，VacuumTube 与两者的账号/目标设备链路仍待验收。
+状态：通用本机应用/启动器适配已实现；客厅快演示优先 **IINA / QuickTime / 本机影片夹**（外部 App，不嵌入）；BiliTVMac 适配器源码在 [mmTVAdapters](https://github.com/Chiuvenz/mmTVAdapters)，VacuumTube 与 B 站账号链路仍待验收、不阻塞今晚切片。
+
+## 本机播放（快演示）
+
+| 候选 | Bundle ID | 说明 |
+|---|---|---|
+| IINA | `com.colliderli.iina` | 已装则可在「看点什么」一键接入；也可用「本机影片夹」经 `/usr/bin/open -a IINA ~/Movies` |
+| QuickTime Player | `com.apple.QuickTimePlayerX` | 系统兜底 |
+
+不嵌入 AVPlayer 重度界面；符合「mmTV 启动外部 App」偏好。遥控在播放器前台时由 mmTV Remote 的对应 Profile（或默认键盘）处理。
 
 ## YouTube
 
