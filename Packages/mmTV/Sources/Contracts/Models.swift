@@ -124,8 +124,8 @@ public struct HomeControlState: Identifiable, Equatable, Sendable {
 }
 
 /// How the Home module presents Home Assistant on the TV shell.
-/// - `controls`: remotes-friendly light/scene grid (REST or mock).
-/// - `lovelace`: open HA’s own Lovelace frontend (preferred live UI; optional WallPanel on HA).
+/// - `controls`: remotes-friendly native SwiftUI light/scene grid (REST or mock) — default.
+/// - `lovelace`: optionally show HA’s Lovelace frontend in WKWebView (demoted; optional WallPanel on HA).
 public enum HomeUIMode: String, Codable, Sendable {
     case controls
     case lovelace
@@ -139,7 +139,7 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
     /// When true, Home uses in-app mock lights/scenes — no network required.
     public var useMock: Bool
     public var controls: [HomeControl]
-    /// Preferred UI when HA URL is reachable. Mock always falls back to `controls`.
+    /// Primary UI. Default `controls` keeps native quick actions first; set `lovelace` to also show the dashboard card.
     public var uiMode: HomeUIMode
     /// Path appended to `baseURL` for Lovelace / WallPanel dashboards (e.g. `/lovelace/tv` or `/`).
     public var dashboardPath: String
@@ -147,7 +147,7 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
                 token: String = "",
                 useMock: Bool = true,
                 controls: [HomeControl] = HomeControl.demoDefaults,
-                uiMode: HomeUIMode = .lovelace,
+                uiMode: HomeUIMode = .controls,
                 dashboardPath: String = "/") {
         self.baseURL = baseURL
         self.token = token
@@ -187,6 +187,10 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
     public var prefersLovelaceUI: Bool {
         uiMode == .lovelace && dashboardURL != nil && !useMock
     }
+    /// Show the optional Lovelace opener card (demoted after native controls).
+    public var showsLovelaceCard: Bool {
+        uiMode == .lovelace && dashboardURL != nil
+    }
 
     enum CodingKeys: String, CodingKey {
         case baseURL, token, useMock, controls, uiMode, dashboardPath
@@ -198,7 +202,7 @@ public struct HomeAssistantConfiguration: Codable, Equatable, Sendable {
         token = try container.decodeIfPresent(String.self, forKey: .token) ?? ""
         useMock = try container.decodeIfPresent(Bool.self, forKey: .useMock) ?? true
         controls = try container.decodeIfPresent([HomeControl].self, forKey: .controls) ?? HomeControl.demoDefaults
-        uiMode = try container.decodeIfPresent(HomeUIMode.self, forKey: .uiMode) ?? .lovelace
+        uiMode = try container.decodeIfPresent(HomeUIMode.self, forKey: .uiMode) ?? .controls
         dashboardPath = try container.decodeIfPresent(String.self, forKey: .dashboardPath) ?? "/"
     }
 }

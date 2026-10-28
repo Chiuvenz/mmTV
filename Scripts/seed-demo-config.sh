@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Merge living-room demo entries + HA Lovelace + Jellyfin media library into Application Support.
+# Merge living-room demo entries + native HA controls + Jellyfin media library into Application Support.
 # Safe: keeps existing entries (e.g. BiliTVMac); only adds missing demo titles / config blocks.
 set -euo pipefail
 
@@ -110,15 +110,19 @@ ha = cfg.get("homeAssistant")
 ex_ha = example["homeAssistant"]
 if not isinstance(ha, dict):
     ha = dict(ex_ha)
-    print("added homeAssistant (uiMode=lovelace, useMock=true)")
+    print("added homeAssistant (uiMode=controls, useMock=true)")
 else:
     ha.setdefault("baseURL", ex_ha["baseURL"])
     ha.setdefault("token", "REPLACE_WITH_LONG_LIVED_TOKEN")
     ha.setdefault("useMock", True)
     ha.setdefault("controls", ex_ha["controls"])
-    ha.setdefault("uiMode", "lovelace")
+    ha.setdefault("uiMode", "controls")
     ha.setdefault("dashboardPath", "/")
-    print("kept existing homeAssistant; ensured lovelace keys")
+    # Prefer native controls for living-room remote demo; Lovelace stays optional.
+    if ha.get("uiMode") == "lovelace":
+        ha["uiMode"] = "controls"
+        print("switched homeAssistant.uiMode lovelace → controls")
+    print("kept existing homeAssistant; ensured native-controls keys")
 cfg["homeAssistant"] = ha
 
 ml = cfg.get("mediaLibrary")
@@ -140,6 +144,6 @@ config_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
 os.chmod(config_path, 0o600)
 print(f"wrote {config_path}")
 print(f"backup {backup}")
-print("Next: brew install --cask jellyfin; point libraries at Media/Movies & Media/TV.")
-print("HA: set baseURL; optional token for REST controls; open Lovelace from Home module.")
+print("Next: ensure Jellyfin is Launch’d (http://127.0.0.1:8096) with Movies/TV library roots.")
+print("HA: native controls first — set baseURL + token + entity IDs; uiMode=lovelace only if you want the optional dashboard card.")
 PY

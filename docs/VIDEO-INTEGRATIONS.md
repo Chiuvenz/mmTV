@@ -6,7 +6,7 @@
 
 | 项 | 值 |
 |---|---|
-| 服务端 | [Jellyfin](https://jellyfin.org) macOS：`brew install --cask jellyfin`（本机验收前未预装） |
+| 服务端 | [Jellyfin](https://jellyfin.org) macOS：`brew install --cask jellyfin`（本机已装 12.4；若 Gatekeeper 卡住可从 `~/Applications/Jellyfin.app` 启动） |
 | Web UI | `http://127.0.0.1:8096` |
 | mmTV 配置 | `mediaLibrary`：`provider=jellyfin`、`baseURL`、`embedInShell`、`libraryRoots` |
 | 真实库根（本机盘） | `/Volumes/mmTV Media/Media/Movies` · `/Volumes/mmTV Media/Media/TV` |

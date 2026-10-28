@@ -118,7 +118,7 @@ struct SettingsView: View {
                     settingsButton("导入配置", .importConfiguration, action: model.importConfiguration)
                     settingsButton("打开配置目录", .openConfigurationDirectory, action: model.openConfigurationDirectory)
                 }
-                Text("版本 \(model.version) · 本地预览构建\n换机器后请确认路径与授权。HA：Lovelace WebView + 可选令牌快捷控件；视频：Jellyfin mediaLibrary。Hermes／多终端未接入。Music／Photos 今晚暂缓。").font(.caption).foregroundStyle(.secondary)
+                Text("版本 \(model.version) · 本地预览构建\n换机器后请确认路径与授权。HA：原生快捷控件（mock/REST）为主，Lovelace 可选；视频：Jellyfin mediaLibrary。Hermes／多终端未接入。Music／Photos 今晚暂缓。").font(.caption).foregroundStyle(.secondary)
             }.padding(12)
         }
     }

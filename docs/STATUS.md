@@ -43,7 +43,7 @@ Xcode Debug 与 Release 构建均已成功。Release 应用通过 codesign --ver
 | Bilibili | MacBook 与 Mac mini 均完成匿名浏览和静音播放烟测；二维码登录、账号持久化、可听音频、电视画面与实体遥控器待验收 |
 | Apple Music | 预览包尚未配置 MusicKit 开发者签名，账户连接默认禁用；真实授权和播放未验收 |
 | 系统照片图库 | 手动权限接口已编译；未擅自请求权限或读取用户图库 |
-| HA / Hermes / 多终端 Remote | **HA**：Lovelace WKWebView + 快捷控件（mock/REST）；可选 WallPanel。Hermes / 多终端网关未实现 |
+| HA / Hermes / 多终端 Remote | **HA**：原生 SwiftUI 快捷控件（mock/REST）为主；Lovelace WKWebView 可选（`uiMode=lovelace`）。Hermes / 多终端网关未实现 |
 | Jellyfin 媒体库 | 配置与壳入口已接线；**本机需用户安装** `brew install --cask jellyfin` 并挂库到 `…/Media/Movies`·`TV` |
 | Music / Photos | 今晚演示暂缓完整能力；权限探针保留；工作量见模块 `effortEstimate` / ROADMAP V0.3 |
 

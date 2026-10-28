@@ -132,16 +132,20 @@ enum SettingsRemoteTarget: Hashable {
     var mediaLibrary: MediaLibraryConfiguration? {
         configuration.mediaLibrary
     }
-    /// Home focus rows: optional Lovelace opener + control states (+ empty placeholder).
+    /// Home focus rows: native controls first; optional Lovelace opener last when uiMode=lovelace.
     var homeChromeCount: Int {
-        (homeConfiguration.dashboardURL != nil ? 1 : 0) + max(homeStates.count, homeStates.isEmpty ? 1 : 0)
+        max(homeStates.count, homeStates.isEmpty ? 1 : 0) + (homeShowsLovelaceCard ? 1 : 0)
     }
+    var homeShowsLovelaceCard: Bool {
+        homeConfiguration.showsLovelaceCard
+    }
+    /// Lovelace card sits after native controls (demoted).
     var homeDashboardFocusIndex: Int? {
-        homeConfiguration.dashboardURL == nil ? nil : 0
+        guard homeShowsLovelaceCard else { return nil }
+        return max(homeStates.count, homeStates.isEmpty ? 1 : 0)
     }
-    var homeControlsFocusOffset: Int {
-        homeConfiguration.dashboardURL == nil ? 0 : 1
-    }
+    /// Native quick actions always start at focus 0.
+    var homeControlsFocusOffset: Int { 0 }
     var visibleModules: [ModuleDescriptor] {
         modules.filter { !configuration.disabledModules.contains($0.id) && (isolatedModule == nil || $0.id == isolatedModule) }
     }
@@ -341,7 +345,7 @@ enum SettingsRemoteTarget: Hashable {
         presentation = .embeddedWeb(
             title: "Home Assistant",
             url: url,
-            footnote: "开源 Lovelace 前端。HA 需你自建可达；可选 HACS「WallPanel」做电视仪表盘。返回键退出 WebView；快捷控件仍可用遥控。"
+            footnote: "可选 Lovelace 前端（已降级）。HA 需你自建可达。返回键退出 WebView；日常请用原生灯/场景快捷控件。"
         )
     }
 
@@ -529,11 +533,11 @@ enum SettingsRemoteTarget: Hashable {
                 homeStates = states
                 focus.select(min(focus.index, max(0, homeChromeCount - 1)), count: homeChromeCount)
                 if config.useMock {
-                    homeMessage = "模拟模式：可先练快捷控件；配置 baseURL 后也能打开 Lovelace。live 时建议 uiMode=lovelace。"
+                    homeMessage = "模拟模式：方向键选灯/场景，确认切换。live 时填 baseURL + token + entity ID；uiMode=lovelace 才显示仪表盘卡片。"
                 } else if !config.canUseLiveAPI {
-                    homeMessage = "令牌仍是占位：快捷控件走模拟；仍可打开 Lovelace（HA 自带登录）。"
+                    homeMessage = "令牌仍是占位：快捷控件走模拟。填入长期访问令牌后可 REST 控制实体。"
                 } else {
-                    homeMessage = "已连接 \(config.baseURL)·UI \(config.uiMode.rawValue)"
+                    homeMessage = "已连接 \(config.baseURL)·原生控件\(config.showsLovelaceCard ? " · 可选 Lovelace" : "")"
                 }
             case .failure(let error):
                 homeStates = (config.controls.isEmpty ? HomeControl.demoDefaults : config.controls).map {

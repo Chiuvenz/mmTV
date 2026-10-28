@@ -95,10 +95,22 @@ import Home
     """
     try Data(json.utf8).write(to: url)
     let loaded = try ConfigurationStore(url: url).load()
-    #expect(loaded.homeAssistant?.uiMode == .lovelace)
+    #expect(loaded.homeAssistant?.uiMode == .controls)
     #expect(loaded.homeAssistant?.dashboardPath == "/")
     #expect(loaded.homeAssistant?.dashboardURL?.absoluteString == "http://ha.local:8123/")
-    #expect(loaded.homeAssistant?.prefersLovelaceUI == true)
+    #expect(loaded.homeAssistant?.prefersLovelaceUI == false)
+    #expect(loaded.homeAssistant?.showsLovelaceCard == false)
+}
+
+@Test func homeAssistantLovelaceCardOnlyWhenModeEnabled() {
+    var config = HomeAssistantConfiguration(useMock: true, uiMode: .controls)
+    #expect(config.showsLovelaceCard == false)
+    config.uiMode = .lovelace
+    #expect(config.showsLovelaceCard == true)
+    #expect(config.prefersLovelaceUI == false) // mock still demotes live Lovelace preference
+    config.useMock = false
+    config.token = "real-token-value"
+    #expect(config.prefersLovelaceUI == true)
 }
 
 @Test func mediaLibraryRoundTrip() throws {

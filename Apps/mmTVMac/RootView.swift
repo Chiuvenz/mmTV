@@ -148,7 +148,7 @@ struct RootView: View {
     @ViewBuilder private func homeControlsGrid(columns: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Text(model.homeUsingMock ? "模拟家居 · 可开 Lovelace" : "Home Assistant")
+                Text(model.homeUsingMock ? "模拟家居 · 原生快捷控件" : "Home Assistant · 快捷控件")
                     .font(.system(size: 21, weight: .medium))
                 if model.homeLoading { ProgressView().controlSize(.small) }
                 Spacer()
@@ -157,29 +157,10 @@ struct RootView: View {
             if let note = model.homeMessage {
                 Text(note).font(.system(size: 13)).foregroundStyle(TVTheme.muted)
             }
-            Text("优先打开开源 Lovelace 仪表盘（壳内 WebView）；下方快捷控件仍可用遥控。HA URL 需你自建托管。")
+            Text("方向键移动焦点，确认切换灯/场景。配置保留 HA URL、令牌与 entity ID。Lovelace 仅在 uiMode=lovelace 时显示为末位可选卡片。")
                 .font(.system(size: 12)).foregroundStyle(TVTheme.muted)
         }.padding(.vertical, 8)
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 18), count: columns), spacing: 18) {
-            if let dashIndex = model.homeDashboardFocusIndex {
-                TVCard(selected: model.focus.index == dashIndex, action: {
-                    model.focus.select(dashIndex, count: model.itemCount)
-                    model.openHomeDashboard()
-                }) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "rectangle.3.group")
-                                .font(.system(size: 28, weight: .light))
-                                .foregroundStyle(TVTheme.mint)
-                            Spacer()
-                            StatusPill(model.homeConfiguration.uiMode == .lovelace ? "Lovelace" : "仪表盘", ready: true)
-                        }
-                        Text("打开 HA 仪表盘").font(.system(size: 22, weight: .medium)).lineLimit(1)
-                        Text(model.homeConfiguration.dashboardURL?.absoluteString ?? model.homeConfiguration.baseURL)
-                            .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
-                    }.frame(height: 130, alignment: .top)
-                }.id(dashIndex)
-            }
             if model.homeStates.isEmpty {
                 let emptyIndex = model.homeControlsFocusOffset
                 TVCard(selected: model.focus.index == emptyIndex, action: model.refreshHome) {
@@ -192,24 +173,52 @@ struct RootView: View {
             } else {
                 ForEach(Array(model.homeStates.enumerated()), id: \.element.id) { index, state in
                     let focusIndex = index + model.homeControlsFocusOffset
-                    TVCard(selected: model.focus.index == focusIndex, action: {
+                    let focused = model.focus.index == focusIndex
+                    TVCard(selected: focused, action: {
                         model.focus.select(focusIndex, count: model.itemCount)
                         model.activateFocusedHomeControl()
                     }) {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 Image(systemName: homeSymbol(state))
-                                    .font(.system(size: 28, weight: .light))
-                                    .foregroundStyle(TVTheme.mint)
+                                    .font(.system(size: 32, weight: .light))
+                                    .foregroundStyle(focused ? TVTheme.mint : TVTheme.mint.opacity(0.85))
+                                    .scaleEffect(focused ? 1.08 : 1)
                                 Spacer()
                                 StatusPill(homePill(state), ready: state.isOn == true || state.kind == .scene)
                             }
-                            Text(state.title).font(.system(size: 22, weight: .medium)).lineLimit(1)
+                            Text(state.title)
+                                .font(.system(size: focused ? 24 : 22, weight: .semibold))
+                                .lineLimit(1)
                             Text(state.detail.isEmpty ? state.id : state.detail)
-                                .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
-                        }.frame(height: 130, alignment: .top)
+                                .font(.system(size: 13)).foregroundStyle(TVTheme.muted).lineLimit(1)
+                            if focused {
+                                Text(state.kind == .scene ? "确认 · 激活场景" : "确认 · 开/关")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(TVTheme.mint)
+                            }
+                        }.frame(height: 148, alignment: .top)
                     }.id(focusIndex)
                 }
+            }
+            if let dashIndex = model.homeDashboardFocusIndex {
+                TVCard(selected: model.focus.index == dashIndex, action: {
+                    model.focus.select(dashIndex, count: model.itemCount)
+                    model.openHomeDashboard()
+                }) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "rectangle.3.group")
+                                .font(.system(size: 28, weight: .light))
+                                .foregroundStyle(TVTheme.muted)
+                            Spacer()
+                            StatusPill("可选", ready: false)
+                        }
+                        Text("打开 HA 仪表盘").font(.system(size: 20, weight: .medium)).lineLimit(1)
+                        Text(model.homeConfiguration.dashboardURL?.absoluteString ?? model.homeConfiguration.baseURL)
+                            .font(.system(size: 12)).foregroundStyle(TVTheme.muted).lineLimit(1)
+                    }.frame(height: 130, alignment: .top)
+                }.id(dashIndex)
             }
         }
     }

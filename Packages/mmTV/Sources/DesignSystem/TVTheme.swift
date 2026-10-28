@@ -49,14 +49,14 @@ public struct TVCard<Content: View>: View {
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
-                .background(selected ? TVTheme.mint.opacity(0.12) : TVTheme.panel, in: RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? TVTheme.mint : .white.opacity(0.06), lineWidth: selected ? 2.5 : 1))
-                .shadow(color: selected ? TVTheme.mint.opacity(0.08) : .clear, radius: 24)
+                .background(selected ? TVTheme.mint.opacity(0.18) : TVTheme.panel, in: RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? TVTheme.mint : .white.opacity(0.06), lineWidth: selected ? 3.5 : 1))
+                .shadow(color: selected ? TVTheme.mint.opacity(0.22) : .clear, radius: selected ? 28 : 0, y: selected ? 4 : 0)
         }
         .buttonStyle(.plain)
         .focusable(false)
-        .scaleEffect(selected ? 1.015 : 1)
-        .animation(.easeOut(duration: 0.15), value: selected)
+        .scaleEffect(selected ? 1.04 : 1)
+        .animation(.easeOut(duration: 0.14), value: selected)
     }
 }
 
